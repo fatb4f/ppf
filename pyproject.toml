@@ -1,0 +1,48 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ppf"
+version = "0.2.0"
+description = "Shared structural and semantic validation for Python Policy PPF documents."
+requires-python = ">=3.14,<3.15"
+dependencies = [
+  "cyclopts>=4.22,<5",
+  "jsonschema[format]>=4.25,<5",
+  "referencing>=0.36,<1",
+  "rfc8785>=0.1.4,<1",
+]
+
+[dependency-groups]
+dev = [
+  "datamodel-code-generator==0.71.0",
+  "hypothesis>=6.138,<7",
+  "libcst>=1.8,<2",
+  "pydantic>=2.11,<3",
+  "pytest>=8.4,<9",
+  "ruff>=0.12,<1",
+]
+
+[project.scripts]
+ppf-validate = "ppf.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ppf"]
+
+[tool.pytest.ini_options]
+testpaths = [
+  "tests",
+  ".codex/skills/python-policy-ppf/tests",
+]
+
+[tool.ruff]
+target-version = "py314"
+line-length = 100
+extend-exclude = [".venv", "python-policy-ppf"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
+
+[tool.ruff.format]
+quote-style = "double"

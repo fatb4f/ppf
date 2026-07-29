@@ -13,7 +13,9 @@ description: Compile Python 3.14 canonical specifications, project policy, advis
 
 ## Procedure
 
-1. Read `references/python-policy-ppf.schema.json` and `schema-registry.json`.
+1. Read `references/python-policy-ppf.schema.json` and `schema-registry.json`. When
+   planning, executing, or reviewing an evaluation workflow, also read
+   `extensions/python-policy-ppf.eval-workflow-extension.schema.json`.
 2. Classify each authority as `canonical-specification`, `versioned-rationale`, `project-policy`, `advisory-reference`, or `diagnostic-documentation`.
 3. Lock every source, configuration, subject, tool distribution, and artifact by SHA-256 digest.
 4. Map each policy claim to applicability, gates, fixtures, probes, oracles, and limitations.
@@ -25,6 +27,24 @@ description: Compile Python 3.14 canonical specifications, project policy, advis
 ```bash
 python <skill-directory>/scripts/validate_catalog.py PATH.json [PATH.json ...]
 ```
+
+## Evaluation workflow
+
+Treat the evaluation-workflow extension as authoritative for exact states,
+transitions, causes, and document constraints. Apply this operational flow:
+
+1. Lock the input closure and move from `planned` to `inputs-bound`.
+2. For `qualification-only`, skip the baseline and implementation iterations,
+   then run full qualification.
+3. For `implement-and-qualify`, run and judge the baseline. A passing baseline
+   may proceed to implementation or directly to full qualification; a failed or
+   inconclusive baseline may proceed to full qualification or stop.
+4. When implementation is authorized, run one or more implementation
+   iterations, repeating as needed, then run full qualification.
+5. On full qualification, record `qualified` only for a pass. Record `rejected`
+   for a failure, inconclusive result, or rejected input integrity.
+6. Revoke an existing `qualified` state to `rejected` if input integrity is
+   later revoked.
 
 ## Constraints
 

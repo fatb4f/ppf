@@ -55,7 +55,7 @@
       },
       "configurationRef": {
         "id": "datamodel-codegen-config",
-        "digest": "sha256:5642fe274350cfa4efc22d61997323795dcd839004b6712b7ef04b2f130e9e84",
+        "digest": "sha256:d26b8ce136d110daff7b47f1043adcfe8b20045a6ccdfb0c579618a115e86c89",
         "uri": "pyproject.toml",
         "mediaType": "application/toml"
       },
