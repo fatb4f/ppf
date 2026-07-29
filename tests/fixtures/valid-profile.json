@@ -1,0 +1,97 @@
+{
+  "documentType": "generation-policy-profile",
+  "schemaVersion": "0.2.0",
+  "profileId": "python-3.14-default",
+  "profileVersion": "1.0.0",
+  "profileStatus": "prototype",
+  "target": {
+    "python": "3.14",
+    "requiresPython": ">=3.14,<3.15",
+    "implementation": "any",
+    "platforms": []
+  },
+  "authorityPrecedence": [
+    "canonical-specification",
+    "project-policy",
+    "versioned-rationale",
+    "advisory-reference",
+    "diagnostic-documentation"
+  ],
+  "authoritySources": [
+    {
+      "id": "local-policy",
+      "authorityClass": "project-policy",
+      "title": "Local Python generation policy",
+      "uri": "policy/python-3.14.json",
+      "revision": "1.0.0",
+      "digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "canonicalFor": []
+    }
+  ],
+  "claims": [
+    {
+      "id": "PY-GEN-001",
+      "title": "Modern collection annotations",
+      "statement": "Use built-in collection types in Python 3.14 annotations.",
+      "obligation": {
+        "level": "required",
+        "conditionRef": null
+      },
+      "authorityRefs": [
+        "local-policy"
+      ],
+      "applicability": {
+        "subjectKinds": [
+          "module"
+        ],
+        "includePaths": [
+          "src"
+        ],
+        "excludePaths": [],
+        "predicateRefs": []
+      },
+      "assessedBy": [
+        {
+          "gateRef": "ruff-modern-annotations",
+          "capability": "Detect legacy typing collection aliases",
+          "required": true,
+          "limitations": [
+            "Static syntax evidence only"
+          ]
+        }
+      ],
+      "invariants": [],
+      "nonClaims": []
+    }
+  ],
+  "gates": [
+    {
+      "id": "ruff-modern-annotations",
+      "stage": "syntax-format",
+      "toolRef": "ruff",
+      "command": [
+        "ruff",
+        "check",
+        "--output-format=json",
+        "."
+      ],
+      "configurationRef": {
+        "id": "ruff-config",
+        "digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+        "uri": "pyproject.toml",
+        "mediaType": "application/toml"
+      },
+      "assessedClaimRefs": [
+        "PY-GEN-001"
+      ],
+      "limitations": [
+        "Does not establish runtime behavior"
+      ],
+      "unmappedDiagnostics": "informational"
+    }
+  ],
+  "optionalProfiles": [],
+  "completeness": "declared-claims-only",
+  "pepTreatment": "versioned-rationale-unless-canonical",
+  "metadata": {}
+}

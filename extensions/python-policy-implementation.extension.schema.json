@@ -1,0 +1,4492 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:python-policy-ppf:implementation-policy-extension:0.2.0",
+  "title": "Python Policy PPF Implementation Policy Sidecar Extension",
+  "description": "External companion schema for generated Pydantic projections, attrs runtime objects, cattrs adapters, advisory design patterns, and qualified refactoring transformations. The official Python Policy PPF schema remains unchanged and authoritative.",
+  "$comment": "Register the official schema under urn:python-policy-ppf:generation-policy:0.2.0. This extension is bound to sha256:06055b436bb224a4fc76eef96821d7e467eeb1c047b78807945c22e06d7d4eaf.",
+  "x-ppf-invariants": [
+    {
+      "id": "SHAPE-PREDICATE-TYPED",
+      "statement": "Every shaping predicate references a declared input fact type and is evaluated over an admitted value of that type."
+    },
+    {
+      "id": "SHAPE-FLOW-TOTAL",
+      "statement": "Every decision has true and false targets, every referenced target exists, unreachable nodes are rejected, and cycles are rejected unless explicitly permitted."
+    },
+    {
+      "id": "SHAPE-PRIMARY",
+      "statement": "Every terminal path selects at least one primary semantic profile; multiple primary profiles are rejected unless the terminal explicitly permits them."
+    },
+    {
+      "id": "SHAPE-PROFILE-CLOSURE",
+      "statement": "Selected profiles and facets are closed transitively over their requiredProfileRefs before an implementation binding is selected."
+    },
+    {
+      "id": "SHAPE-CONFLICT",
+      "statement": "A resolved profile and facet set containing a declared conflict is rejected."
+    },
+    {
+      "id": "SHAPE-DIGEST-BINDING",
+      "statement": "Decision records bind immutable subject, policy, registry, and implementation binding content references."
+    },
+    {
+      "id": "SHAPE-GENERATED-PROVENANCE",
+      "statement": "Generated artifacts bind generator identity, generation plan, source inputs, profile selection, annotation policy, and artifact digest."
+    },
+    {
+      "id": "SHAPE-DIFFERENTIAL",
+      "statement": "Optimized implementation bindings pass differential conformance against a qualified reference binding."
+    },
+    {
+      "id": "CAPABILITY-REGISTRY-FREEZE",
+      "statement": "Capability providers are declared, validated, and frozen before wiring-plan compilation or runtime resolution."
+    },
+    {
+      "id": "CAPABILITY-WIRING-CONSISTENCY",
+      "statement": "Dependency validation and runtime resolution consume the same immutable, digest-bound wiring plan."
+    },
+    {
+      "id": "CAPABILITY-LIFETIME",
+      "statement": "A longer-lived capability does not retain a dependency from a shorter-lived scope."
+    },
+    {
+      "id": "CAPABILITY-ALIAS",
+      "statement": "Alias validation and lifetime qualification follow transparent bindings to their terminal providers."
+    },
+    {
+      "id": "CAPABILITY-AMBIGUITY",
+      "statement": "Union dependencies require explicit selection and optional dependencies require declared absence semantics."
+    },
+    {
+      "id": "CAPABILITY-CONTAINER-BOUNDARY",
+      "statement": "Container injection is limited to declared composition roots, framework adapters, child-scope builders, and generic integration boundaries."
+    },
+    {
+      "id": "CAPABILITY-FINALIZATION",
+      "statement": "Managed capabilities bind acquisition and release behavior to a scope and finalize in reverse acquisition order."
+    },
+    {
+      "id": "CAPABILITY-PROVENANCE",
+      "statement": "Provider registries, wiring plans, compiled resolver graphs, overlays, and runtime assembly records are bound by immutable content digests."
+    },
+    {
+      "id": "QUALIFICATION-GRAPH-BOUNDARY",
+      "statement": "A test-harness adapter exposes a selected capability root as one external graph node without reproducing the internal provider graph."
+    },
+    {
+      "id": "QUALIFICATION-SCOPE-BRIDGE",
+      "statement": "A projected fixture does not outlive its container fixture or the resolved capability scope."
+    },
+    {
+      "id": "QUALIFICATION-SURFACE-PUBLICATION",
+      "statement": "Bulk fixture names are checked for collisions before an explicitly selected target module is modified."
+    }
+  ],
+  "$defs": {
+    "OfficialContentRef": {
+      "title": "Official Content Ref",
+      "$ref": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/ContentRef"
+    },
+    "OfficialPolicyObligation": {
+      "title": "Official Policy Obligation",
+      "$ref": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/PolicyObligation"
+    },
+    "OfficialJsonValue": {
+      "title": "Official JSON Value",
+      "$ref": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/JsonValue"
+    },
+    "BaseContractBinding": {
+      "type": "object",
+      "title": "Base Contract Binding",
+      "additionalProperties": false,
+      "properties": {
+        "schemaId": {
+          "type": "string",
+          "const": "urn:python-policy-ppf:generation-policy:0.2.0"
+        },
+        "schemaVersion": {
+          "type": "string",
+          "const": "0.2.0"
+        },
+        "digest": {
+          "type": "string",
+          "const": "sha256:06055b436bb224a4fc76eef96821d7e467eeb1c047b78807945c22e06d7d4eaf"
+        }
+      },
+      "required": [
+        "schemaId",
+        "schemaVersion",
+        "digest"
+      ]
+    },
+    "ImplementationAuthorityRole": {
+      "type": "string",
+      "title": "Implementation Authority Role",
+      "enum": [
+        "canonical-contract",
+        "schema-projection",
+        "project-implementation",
+        "serialization-adapter",
+        "advisory-vocabulary",
+        "advisory-recipe"
+      ]
+    },
+    "ImplementationComponent": {
+      "type": "string",
+      "title": "Implementation Component",
+      "enum": [
+        "json-schema",
+        "generated-pydantic",
+        "attrs",
+        "cattrs",
+        "design-patterns",
+        "refactorings"
+      ]
+    },
+    "ImplementationAuthorityAssignment": {
+      "type": "object",
+      "title": "Implementation Authority Assignment",
+      "additionalProperties": false,
+      "properties": {
+        "component": {
+          "$ref": "#/$defs/ImplementationComponent"
+        },
+        "role": {
+          "$ref": "#/$defs/ImplementationAuthorityRole"
+        }
+      },
+      "required": [
+        "component",
+        "role"
+      ]
+    },
+    "ProjectionCoverageKind": {
+      "type": "string",
+      "title": "Projection Coverage Kind",
+      "enum": [
+        "catalog-documents",
+        "plan-documents",
+        "run-documents",
+        "report-documents",
+        "discriminated-item-unions",
+        "fixtures",
+        "probes",
+        "observations",
+        "counterexamples",
+        "waivers",
+        "enums",
+        "structural-field-constraints"
+      ]
+    },
+    "SemanticResponsibility": {
+      "type": "string",
+      "title": "Semantic Responsibility",
+      "enum": [
+        "cross-reference-validation",
+        "uniqueness-validation",
+        "authority-rules",
+        "applicability-rules",
+        "evidence-admission",
+        "verdict-aggregation",
+        "probe-adapters",
+        "execution-orchestration",
+        "time-sensitive-waiver-validation"
+      ]
+    },
+    "ValidatorDivergenceDomain": {
+      "type": "string",
+      "title": "Validator Divergence Domain",
+      "enum": [
+        "regex-semantics",
+        "format-semantics",
+        "coercion",
+        "defaults",
+        "union-selection",
+        "additional-properties"
+      ]
+    },
+    "ProjectionCiStage": {
+      "type": "string",
+      "title": "Projection CI Stage",
+      "enum": [
+        "regenerate-and-check-clean",
+        "ruff-generated-code",
+        "ty-generated-code",
+        "json-schema-pydantic-differential-tests",
+        "semantic-validation-tests",
+        "complete-ppf-harness-tests"
+      ]
+    },
+    "DatamodelCodeGeneratorConfiguration": {
+      "type": "object",
+      "title": "Datamodel Code Generator Configuration",
+      "additionalProperties": false,
+      "properties": {
+        "inputFileType": {
+          "type": "string",
+          "const": "jsonschema",
+          "default": "jsonschema"
+        },
+        "outputModelType": {
+          "type": "string",
+          "const": "pydantic_v2.BaseModel",
+          "default": "pydantic_v2.BaseModel"
+        },
+        "targetPythonVersion": {
+          "type": "string",
+          "const": "3.14",
+          "default": "3.14"
+        },
+        "useStandardCollections": {
+          "type": "boolean",
+          "const": true,
+          "default": true
+        },
+        "useUnionOperator": {
+          "type": "boolean",
+          "const": true,
+          "default": true
+        },
+        "useAnnotated": {
+          "type": "boolean",
+          "const": true,
+          "default": true
+        },
+        "formatters": {
+          "type": "array",
+          "default": [],
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "ruff-check",
+              "ruff-format"
+            ]
+          }
+        }
+      }
+    },
+    "ProjectionGeneratorLock": {
+      "type": "object",
+      "title": "Projection Generator Lock",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$"
+        },
+        "tool": {
+          "type": "string",
+          "const": "datamodel-code-generator",
+          "default": "datamodel-code-generator"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:[A-Za-z0-9._+-]*)$"
+        },
+        "distributionRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "configurationRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "configuration": {
+          "$ref": "#/$defs/DatamodelCodeGeneratorConfiguration"
+        },
+        "inputSchemaRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "outputPath": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "id",
+        "version",
+        "distributionRef",
+        "configurationRef",
+        "configuration",
+        "inputSchemaRef",
+        "outputPath"
+      ]
+    },
+    "GeneratedArtifactPolicy": {
+      "type": "object",
+      "title": "Generated Artifact Policy",
+      "additionalProperties": false,
+      "properties": {
+        "immutableBuildProduct": {
+          "type": "boolean",
+          "const": true,
+          "default": true
+        },
+        "generatedFileHeaderRequired": {
+          "type": "boolean",
+          "const": true,
+          "default": true
+        },
+        "handEditing": {
+          "type": "string",
+          "const": "forbidden",
+          "default": "forbidden"
+        },
+        "generatorVersionPinned": {
+          "type": "boolean",
+          "const": true,
+          "default": true
+        },
+        "configurationPinned": {
+          "type": "boolean",
+          "const": true,
+          "default": true
+        },
+        "ciRegenerationDirectory": {
+          "type": "string",
+          "const": "temporary",
+          "default": "temporary"
+        },
+        "driftResponse": {
+          "type": "string",
+          "const": "fail",
+          "default": "fail"
+        },
+        "reviewSurface": {
+          "type": "string",
+          "const": "schema-changes",
+          "default": "schema-changes"
+        }
+      }
+    },
+    "FacadeBoundaryPolicy": {
+      "type": "object",
+      "title": "Facade Boundary Policy",
+      "additionalProperties": false,
+      "properties": {
+        "required": {
+          "type": "boolean",
+          "const": true,
+          "default": true
+        },
+        "applicationDependsOnGeneratedClassNames": {
+          "type": "boolean",
+          "const": false,
+          "default": false
+        },
+        "strictBoundaryValidation": {
+          "type": "boolean",
+          "const": true,
+          "default": true
+        },
+        "semanticValidationAfterProjection": {
+          "type": "boolean",
+          "const": true,
+          "default": true
+        }
+      }
+    },
+    "DifferentialQualificationPolicy": {
+      "type": "object",
+      "title": "Differential Qualification Policy",
+      "additionalProperties": false,
+      "properties": {
+        "validators": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "json-schema"
+            },
+            {
+              "const": "generated-pydantic"
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "validFixtureAgreementRequired": {
+          "type": "boolean",
+          "const": true,
+          "default": true
+        },
+        "invalidFixtureAgreementRequired": {
+          "type": "boolean",
+          "const": true,
+          "default": true
+        },
+        "disagreementResult": {
+          "type": "string",
+          "const": "generator-projection-qualification-failure",
+          "default": "generator-projection-qualification-failure"
+        },
+        "schemaGeneratedValues": {
+          "type": "boolean",
+          "const": true,
+          "default": true
+        },
+        "generatorFramework": {
+          "type": "string",
+          "const": "hypothesis",
+          "default": "hypothesis"
+        },
+        "persistMinimizedDisagreements": {
+          "type": "boolean",
+          "const": true,
+          "default": true
+        },
+        "regressionFixturePromotion": {
+          "type": "boolean",
+          "const": true,
+          "default": true
+        },
+        "ciSequence": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "regenerate-and-check-clean"
+            },
+            {
+              "const": "ruff-generated-code"
+            },
+            {
+              "const": "ty-generated-code"
+            },
+            {
+              "const": "json-schema-pydantic-differential-tests"
+            },
+            {
+              "const": "semantic-validation-tests"
+            },
+            {
+              "const": "complete-ppf-harness-tests"
+            }
+          ],
+          "items": false,
+          "minItems": 6,
+          "maxItems": 6
+        }
+      },
+      "required": [
+        "validators",
+        "ciSequence"
+      ]
+    },
+    "SchemaProjectionPolicy": {
+      "type": "object",
+      "title": "Schema Projection Policy",
+      "additionalProperties": false,
+      "properties": {
+        "authority": {
+          "type": "string",
+          "const": "schema-projection",
+          "default": "schema-projection"
+        },
+        "canonicalContractFormat": {
+          "type": "string",
+          "const": "json-schema-draft-2020-12",
+          "default": "json-schema-draft-2020-12"
+        },
+        "projectionTarget": {
+          "type": "string",
+          "const": "pydantic-v2",
+          "default": "pydantic-v2"
+        },
+        "generator": {
+          "$ref": "#/$defs/ProjectionGeneratorLock"
+        },
+        "coverage": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "catalog-documents"
+            },
+            {
+              "const": "plan-documents"
+            },
+            {
+              "const": "run-documents"
+            },
+            {
+              "const": "report-documents"
+            },
+            {
+              "const": "discriminated-item-unions"
+            },
+            {
+              "const": "fixtures"
+            },
+            {
+              "const": "probes"
+            },
+            {
+              "const": "observations"
+            },
+            {
+              "const": "counterexamples"
+            },
+            {
+              "const": "waivers"
+            },
+            {
+              "const": "enums"
+            },
+            {
+              "const": "structural-field-constraints"
+            }
+          ],
+          "items": false,
+          "minItems": 12,
+          "maxItems": 12
+        },
+        "handwrittenResponsibilities": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "cross-reference-validation"
+            },
+            {
+              "const": "uniqueness-validation"
+            },
+            {
+              "const": "authority-rules"
+            },
+            {
+              "const": "applicability-rules"
+            },
+            {
+              "const": "evidence-admission"
+            },
+            {
+              "const": "verdict-aggregation"
+            },
+            {
+              "const": "probe-adapters"
+            },
+            {
+              "const": "execution-orchestration"
+            },
+            {
+              "const": "time-sensitive-waiver-validation"
+            }
+          ],
+          "items": false,
+          "minItems": 9,
+          "maxItems": 9
+        },
+        "artifactPolicy": {
+          "$ref": "#/$defs/GeneratedArtifactPolicy"
+        },
+        "facade": {
+          "$ref": "#/$defs/FacadeBoundaryPolicy"
+        },
+        "canonicalValidationRetained": {
+          "type": "boolean",
+          "const": true,
+          "default": true
+        },
+        "divergenceDomains": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "regex-semantics"
+            },
+            {
+              "const": "format-semantics"
+            },
+            {
+              "const": "coercion"
+            },
+            {
+              "const": "defaults"
+            },
+            {
+              "const": "union-selection"
+            },
+            {
+              "const": "additional-properties"
+            }
+          ],
+          "items": false,
+          "minItems": 6,
+          "maxItems": 6
+        },
+        "qualification": {
+          "$ref": "#/$defs/DifferentialQualificationPolicy"
+        }
+      },
+      "required": [
+        "generator",
+        "coverage",
+        "handwrittenResponsibilities",
+        "artifactPolicy",
+        "facade",
+        "divergenceDomains",
+        "qualification"
+      ]
+    },
+    "RuntimeFlowStage": {
+      "type": "string",
+      "title": "Runtime Flow Stage",
+      "enum": [
+        "json-input",
+        "generated-pydantic-document",
+        "semantic-validation",
+        "attrs-runtime-objects",
+        "evaluation",
+        "generated-pydantic-report",
+        "json-output"
+      ]
+    },
+    "AttrsCapability": {
+      "type": "string",
+      "title": "Attrs Capability",
+      "enum": [
+        "frozen",
+        "slots",
+        "converters",
+        "validators",
+        "evolve"
+      ]
+    },
+    "AttrsRuntimeCandidate": {
+      "type": "string",
+      "title": "Attrs Runtime Candidate",
+      "enum": [
+        "execution-context",
+        "admitted-evidence",
+        "ephemeral-domain-object",
+        "internal-evaluation-state"
+      ]
+    },
+    "CattrsPayloadKind": {
+      "type": "string",
+      "title": "Cattrs Payload Kind",
+      "enum": [
+        "ansible-result",
+        "ruff-normalized-diagnostic",
+        "ty-normalized-diagnostic",
+        "subprocess-message",
+        "remote-executor-message",
+        "cached-runtime-state"
+      ]
+    },
+    "RuntimeRepresentationPolicy": {
+      "type": "object",
+      "title": "Runtime Representation Policy",
+      "additionalProperties": false,
+      "properties": {
+        "publicDocumentModel": {
+          "type": "string",
+          "const": "generated-pydantic",
+          "default": "generated-pydantic"
+        },
+        "internalRuntimeModel": {
+          "type": "string",
+          "const": "attrs",
+          "default": "attrs"
+        },
+        "adapterStructuringTool": {
+          "type": "string",
+          "const": "cattrs",
+          "default": "cattrs"
+        },
+        "behaviorInterface": {
+          "type": "string",
+          "const": "typing.Protocol",
+          "default": "typing.Protocol"
+        },
+        "duplicateAttrsPublicModelsForbidden": {
+          "type": "boolean",
+          "const": true,
+          "default": true
+        },
+        "duplicatePpfSerializationPathsForbidden": {
+          "type": "boolean",
+          "const": true,
+          "default": true
+        },
+        "attrsCandidates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AttrsRuntimeCandidate"
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "allOf": [
+            {
+              "contains": {
+                "const": "execution-context"
+              }
+            },
+            {
+              "contains": {
+                "const": "admitted-evidence"
+              }
+            }
+          ]
+        },
+        "attrsCapabilities": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AttrsCapability"
+          },
+          "uniqueItems": true,
+          "minItems": 1
+        },
+        "cattrsActivation": {
+          "type": "string",
+          "const": "only-when-non-pydantic-adapter-needs-it",
+          "default": "only-when-non-pydantic-adapter-needs-it"
+        },
+        "cattrsAllowedPayloadKinds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CattrsPayloadKind"
+          },
+          "uniqueItems": true,
+          "default": []
+        },
+        "cattrsForbiddenArtifactKinds": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "catalog-documents"
+            },
+            {
+              "const": "plan-documents"
+            },
+            {
+              "const": "run-documents"
+            },
+            {
+              "const": "report-documents"
+            }
+          ],
+          "items": false,
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "flow": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "json-input"
+            },
+            {
+              "const": "generated-pydantic-document"
+            },
+            {
+              "const": "semantic-validation"
+            },
+            {
+              "const": "attrs-runtime-objects"
+            },
+            {
+              "const": "evaluation"
+            },
+            {
+              "const": "generated-pydantic-report"
+            },
+            {
+              "const": "json-output"
+            }
+          ],
+          "items": false,
+          "minItems": 7,
+          "maxItems": 7
+        }
+      },
+      "required": [
+        "attrsCandidates",
+        "attrsCapabilities",
+        "cattrsForbiddenArtifactKinds",
+        "flow"
+      ]
+    },
+    "DesignPatternKind": {
+      "type": "string",
+      "title": "Design Pattern Kind",
+      "enum": [
+        "strategy",
+        "adapter",
+        "command",
+        "facade",
+        "decorator",
+        "observer",
+        "state",
+        "factory-method",
+        "chain-of-responsibility"
+      ]
+    },
+    "PatternApplicationDefinition": {
+      "type": "object",
+      "title": "Pattern Application Definition",
+      "additionalProperties": false,
+      "properties": {
+        "pattern": {
+          "$ref": "#/$defs/RecommendedDesignPatternKind"
+        },
+        "applications": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PatternApplicationTarget"
+          },
+          "uniqueItems": true,
+          "minItems": 1
+        },
+        "obligation": {
+          "$ref": "#/$defs/OfficialPolicyObligation"
+        },
+        "activationEvidenceRefs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$"
+          },
+          "default": []
+        },
+        "limitations": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "default": []
+        }
+      },
+      "required": [
+        "pattern",
+        "applications",
+        "obligation"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "pattern": {
+                "const": "strategy"
+              }
+            },
+            "required": [
+              "pattern"
+            ]
+          },
+          "then": {
+            "properties": {
+              "applications": {
+                "items": {
+                  "enum": [
+                    "probe-implementations",
+                    "oracle-implementations",
+                    "generator-implementations",
+                    "admission-policy-implementations"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "pattern": {
+                "const": "adapter"
+              }
+            },
+            "required": [
+              "pattern"
+            ]
+          },
+          "then": {
+            "properties": {
+              "applications": {
+                "items": {
+                  "enum": [
+                    "ruff-integration",
+                    "ty-integration",
+                    "pytest-integration",
+                    "hypothesis-integration",
+                    "ansible-integration",
+                    "crosshair-integration",
+                    "import-linter-integration"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "pattern": {
+                "const": "command"
+              }
+            },
+            "required": [
+              "pattern"
+            ]
+          },
+          "then": {
+            "properties": {
+              "applications": {
+                "items": {
+                  "enum": [
+                    "immutable-evaluation-cases",
+                    "executable-plan-steps"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "pattern": {
+                "const": "facade"
+              }
+            },
+            "required": [
+              "pattern"
+            ]
+          },
+          "then": {
+            "properties": {
+              "applications": {
+                "items": {
+                  "enum": [
+                    "public-ppf-engine-api"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "pattern": {
+                "const": "decorator"
+              }
+            },
+            "required": [
+              "pattern"
+            ]
+          },
+          "then": {
+            "properties": {
+              "applications": {
+                "items": {
+                  "enum": [
+                    "timeout-wrappers",
+                    "instrumentation-wrappers",
+                    "sandbox-wrappers",
+                    "evidence-capture-wrappers"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "pattern": {
+                "const": "observer"
+              }
+            },
+            "required": [
+              "pattern"
+            ]
+          },
+          "then": {
+            "properties": {
+              "applications": {
+                "items": {
+                  "enum": [
+                    "reporting-hooks",
+                    "pluggy-events"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "pattern": {
+                "const": "state"
+              }
+            },
+            "required": [
+              "pattern"
+            ]
+          },
+          "then": {
+            "properties": {
+              "applications": {
+                "items": {
+                  "enum": [
+                    "plan-lifecycle",
+                    "run-lifecycle"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "pattern": {
+                "const": "factory-method"
+              }
+            },
+            "required": [
+              "pattern"
+            ]
+          },
+          "then": {
+            "properties": {
+              "applications": {
+                "items": {
+                  "enum": [
+                    "locked-configuration-adapter-creation"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "PatternFitAssessment": {
+      "type": "object",
+      "title": "Pattern Fit Assessment",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$"
+        },
+        "pattern": {
+          "$ref": "#/$defs/DesignPatternKind"
+        },
+        "contextPredicateSatisfied": {
+          "type": "boolean"
+        },
+        "requiredForcesPresent": {
+          "type": "boolean"
+        },
+        "liabilitiesAcceptable": {
+          "type": "boolean"
+        },
+        "participantResponsibilitiesObserved": {
+          "type": "boolean"
+        },
+        "evidenceRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/OfficialContentRef"
+          },
+          "default": []
+        },
+        "fit": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "pattern",
+        "contextPredicateSatisfied",
+        "requiredForcesPresent",
+        "liabilitiesAcceptable",
+        "participantResponsibilitiesObserved",
+        "fit"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "contextPredicateSatisfied": {
+                "const": true
+              },
+              "requiredForcesPresent": {
+                "const": true
+              },
+              "liabilitiesAcceptable": {
+                "const": true
+              },
+              "participantResponsibilitiesObserved": {
+                "const": true
+              }
+            },
+            "required": [
+              "contextPredicateSatisfied",
+              "requiredForcesPresent",
+              "liabilitiesAcceptable",
+              "participantResponsibilitiesObserved"
+            ]
+          },
+          "then": {
+            "properties": {
+              "fit": {
+                "const": true
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "fit": {
+                "const": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "AdmissionPipelineStage": {
+      "type": "string",
+      "title": "Admission Pipeline Stage",
+      "enum": [
+        "normalize",
+        "verify-provenance",
+        "check-applicability",
+        "check-reliability",
+        "resolve-conflicts",
+        "aggregate",
+        "produce-verdict"
+      ]
+    },
+    "DesignPatternPolicy": {
+      "type": "object",
+      "title": "Design Pattern Policy",
+      "additionalProperties": false,
+      "properties": {
+        "authority": {
+          "type": "string",
+          "const": "advisory-vocabulary",
+          "default": "advisory-vocabulary"
+        },
+        "patternAbsenceIsFailure": {
+          "type": "boolean",
+          "const": false,
+          "default": false
+        },
+        "fitAssessmentRequiredForAdoption": {
+          "type": "boolean",
+          "const": true,
+          "default": true
+        },
+        "initialVocabulary": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "strategy"
+            },
+            {
+              "const": "adapter"
+            },
+            {
+              "const": "facade"
+            },
+            {
+              "const": "decorator"
+            }
+          ],
+          "items": false,
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "applications": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PatternApplicationDefinition"
+          },
+          "minItems": 1
+        },
+        "admissionPipeline": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "normalize"
+            },
+            {
+              "const": "verify-provenance"
+            },
+            {
+              "const": "check-applicability"
+            },
+            {
+              "const": "check-reliability"
+            },
+            {
+              "const": "resolve-conflicts"
+            },
+            {
+              "const": "aggregate"
+            },
+            {
+              "const": "produce-verdict"
+            }
+          ],
+          "items": false,
+          "minItems": 7,
+          "maxItems": 7
+        },
+        "genericChainOfResponsibilityForAdmission": {
+          "type": "string",
+          "const": "discouraged",
+          "default": "discouraged"
+        },
+        "fitCriteria": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "context-predicate-satisfied"
+            },
+            {
+              "const": "required-forces-present"
+            },
+            {
+              "const": "liabilities-acceptable"
+            },
+            {
+              "const": "participant-responsibilities-observed"
+            }
+          ],
+          "items": false,
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "fitAssessments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PatternFitAssessment"
+          },
+          "default": []
+        }
+      },
+      "required": [
+        "initialVocabulary",
+        "applications",
+        "admissionPipeline",
+        "fitCriteria"
+      ]
+    },
+    "RefactoringKind": {
+      "type": "string",
+      "title": "Refactoring Kind",
+      "enum": [
+        "extract-function",
+        "introduce-parameter-object",
+        "move-function",
+        "replace-conditional-with-polymorphism",
+        "separate-query-from-modifier"
+      ]
+    },
+    "TransformationOperation": {
+      "type": "object",
+      "title": "Transformation Operation",
+      "additionalProperties": false,
+      "properties": {
+        "sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "operation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "parameters": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/OfficialJsonValue"
+          },
+          "default": {}
+        }
+      },
+      "required": [
+        "sequence",
+        "operation"
+      ]
+    },
+    "RefactoringTransformation": {
+      "type": "object",
+      "title": "Refactoring Transformation",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$"
+        },
+        "recipe": {
+          "$ref": "#/$defs/RefactoringKind"
+        },
+        "authority": {
+          "type": "string",
+          "const": "advisory-recipe",
+          "default": "advisory-recipe"
+        },
+        "preconditionRefs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$"
+          },
+          "minItems": 1
+        },
+        "beforeStatePredicateRefs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$"
+          },
+          "minItems": 1
+        },
+        "operations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TransformationOperation"
+          },
+          "minItems": 1
+        },
+        "preservationOracleRefs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$"
+          },
+          "minItems": 1
+        },
+        "afterStatePredicateRefs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$"
+          },
+          "minItems": 1
+        }
+      },
+      "required": [
+        "id",
+        "recipe",
+        "preconditionRefs",
+        "beforeStatePredicateRefs",
+        "operations",
+        "preservationOracleRefs",
+        "afterStatePredicateRefs"
+      ]
+    },
+    "RefactoringPolicy": {
+      "type": "object",
+      "title": "Refactoring Policy",
+      "additionalProperties": false,
+      "properties": {
+        "authority": {
+          "type": "string",
+          "const": "advisory-recipe",
+          "default": "advisory-recipe"
+        },
+        "recipeNameCreatesObligation": {
+          "type": "boolean",
+          "const": false,
+          "default": false
+        },
+        "recommendedRecipes": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "extract-function"
+            },
+            {
+              "const": "introduce-parameter-object"
+            },
+            {
+              "const": "move-function"
+            },
+            {
+              "const": "replace-conditional-with-polymorphism"
+            },
+            {
+              "const": "separate-query-from-modifier"
+            }
+          ],
+          "items": false,
+          "minItems": 5,
+          "maxItems": 5
+        },
+        "transformations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RefactoringTransformation"
+          },
+          "default": []
+        }
+      },
+      "required": [
+        "recommendedRecipes"
+      ]
+    },
+    "PatternApplicationTarget": {
+      "type": "string",
+      "title": "Pattern Application Target",
+      "enum": [
+        "probe-implementations",
+        "oracle-implementations",
+        "generator-implementations",
+        "admission-policy-implementations",
+        "ruff-integration",
+        "ty-integration",
+        "pytest-integration",
+        "hypothesis-integration",
+        "ansible-integration",
+        "crosshair-integration",
+        "import-linter-integration",
+        "immutable-evaluation-cases",
+        "executable-plan-steps",
+        "public-ppf-engine-api",
+        "timeout-wrappers",
+        "instrumentation-wrappers",
+        "sandbox-wrappers",
+        "evidence-capture-wrappers",
+        "reporting-hooks",
+        "pluggy-events",
+        "plan-lifecycle",
+        "run-lifecycle",
+        "locked-configuration-adapter-creation"
+      ]
+    },
+    "RecommendedDesignPatternKind": {
+      "type": "string",
+      "title": "Recommended Design Pattern Kind",
+      "enum": [
+        "strategy",
+        "adapter",
+        "command",
+        "facade",
+        "decorator",
+        "observer",
+        "state",
+        "factory-method"
+      ]
+    },
+    "ShapingIdentifier": {
+      "type": "string",
+      "title": "Shaping Identifier",
+      "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$"
+    },
+    "SemanticProfileId": {
+      "type": "string",
+      "title": "Semantic Profile ID",
+      "enum": [
+        "boundary-admission",
+        "semantic-adapter",
+        "pure-operation",
+        "state-transition",
+        "use-case-orchestrator",
+        "effect-port",
+        "artifact-generator"
+      ]
+    },
+    "CompositionFacetId": {
+      "type": "string",
+      "title": "Composition Facet ID",
+      "enum": [
+        "stateful-lifecycle",
+        "external-read-effect",
+        "external-write-effect",
+        "higher-order-binding",
+        "strict-parallel-consumption",
+        "python-3.14-annotations",
+        "free-threading-portability",
+        "interpreter-isolation",
+        "generated-artifact",
+        "capability-assembly",
+        "scoped-capability",
+        "managed-capability",
+        "context-overlay",
+        "late-binding-overlay"
+      ]
+    },
+    "OperationRole": {
+      "type": "string",
+      "title": "Operation Role",
+      "enum": [
+        "extractor",
+        "validator",
+        "classifier",
+        "constructor",
+        "adapter",
+        "transformer",
+        "reducer",
+        "orchestrator",
+        "port",
+        "generator"
+      ]
+    },
+    "FactValueType": {
+      "type": "string",
+      "title": "Fact Value Type",
+      "enum": [
+        "boolean",
+        "integer",
+        "string",
+        "string-set"
+      ]
+    },
+    "FactTypeDefinition": {
+      "type": "object",
+      "title": "Fact Type Definition",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "valueType": {
+          "$ref": "#/$defs/FactValueType"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "allowedValues": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true,
+          "minItems": 1
+        }
+      },
+      "required": [
+        "id",
+        "valueType",
+        "description"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "valueType": {
+                "enum": [
+                  "string",
+                  "string-set"
+                ]
+              }
+            },
+            "required": [
+              "valueType"
+            ]
+          },
+          "then": {},
+          "else": {
+            "not": {
+              "required": [
+                "allowedValues"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "PredicateOperator": {
+      "type": "string",
+      "title": "Predicate Operator",
+      "enum": [
+        "equals",
+        "contains",
+        "is-present",
+        "is-absent"
+      ]
+    },
+    "PredicateDefinition": {
+      "type": "object",
+      "title": "Predicate Definition",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "inputFactRef": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "operator": {
+          "$ref": "#/$defs/PredicateOperator"
+        },
+        "expectedValue": {
+          "$ref": "#/$defs/OfficialJsonValue"
+        }
+      },
+      "required": [
+        "id",
+        "inputFactRef",
+        "operator"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "operator": {
+                "enum": [
+                  "equals",
+                  "contains"
+                ]
+              }
+            },
+            "required": [
+              "operator"
+            ]
+          },
+          "then": {
+            "required": [
+              "expectedValue"
+            ]
+          },
+          "else": {
+            "not": {
+              "required": [
+                "expectedValue"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "DecisionNode": {
+      "type": "object",
+      "title": "Decision Node",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "kind": {
+          "type": "string",
+          "const": "decision"
+        },
+        "predicateRef": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "trueTargetRef": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "falseTargetRef": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "predicateRef",
+        "trueTargetRef",
+        "falseTargetRef"
+      ]
+    },
+    "ProfileContributionNode": {
+      "type": "object",
+      "title": "Profile Contribution Node",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "kind": {
+          "type": "string",
+          "const": "profile-contribution"
+        },
+        "profileRef": {
+          "$ref": "#/$defs/SemanticProfileId"
+        },
+        "selectionRole": {
+          "type": "string",
+          "enum": [
+            "primary",
+            "collaborator"
+          ]
+        },
+        "facetRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CompositionFacetId"
+          },
+          "uniqueItems": true,
+          "default": []
+        },
+        "nextTargetRef": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "profileRef",
+        "selectionRole",
+        "nextTargetRef"
+      ]
+    },
+    "TerminalNode": {
+      "type": "object",
+      "title": "Terminal Node",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "kind": {
+          "type": "string",
+          "const": "terminal"
+        },
+        "minimumPrimaryProfiles": {
+          "type": "integer",
+          "const": 1,
+          "default": 1
+        },
+        "maximumPrimaryProfiles": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1
+        }
+      },
+      "required": [
+        "id",
+        "kind"
+      ]
+    },
+    "ShapingFlowNode": {
+      "title": "Shaping Flow Node",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/DecisionNode"
+        },
+        {
+          "$ref": "#/$defs/ProfileContributionNode"
+        },
+        {
+          "$ref": "#/$defs/TerminalNode"
+        }
+      ],
+      "discriminator": {
+        "propertyName": "kind",
+        "mapping": {
+          "decision": "#/$defs/DecisionNode",
+          "profile-contribution": "#/$defs/ProfileContributionNode",
+          "terminal": "#/$defs/TerminalNode"
+        }
+      }
+    },
+    "ShapingQualificationPolicy": {
+      "type": "object",
+      "title": "Shaping Qualification Policy",
+      "additionalProperties": false,
+      "properties": {
+        "predicateInputsDeclared": {
+          "type": "boolean",
+          "const": true
+        },
+        "decisionsTotal": {
+          "type": "boolean",
+          "const": true
+        },
+        "terminalPrimaryRequired": {
+          "type": "boolean",
+          "const": true
+        },
+        "multiplePrimaryProfiles": {
+          "type": "string",
+          "enum": [
+            "reject",
+            "permit-when-terminal-declares"
+          ]
+        },
+        "transitiveProfileClosureRequired": {
+          "type": "boolean",
+          "const": true
+        },
+        "profileAndFacetConflictsRejected": {
+          "type": "boolean",
+          "const": true
+        },
+        "unreachableNodesRejected": {
+          "type": "boolean",
+          "const": true
+        },
+        "cycles": {
+          "type": "string",
+          "enum": [
+            "reject",
+            "permit-when-declared"
+          ]
+        },
+        "digestBindingsRequired": {
+          "type": "boolean",
+          "const": true
+        },
+        "differentialConformanceRequired": {
+          "type": "boolean",
+          "const": true
+        }
+      },
+      "required": [
+        "predicateInputsDeclared",
+        "decisionsTotal",
+        "terminalPrimaryRequired",
+        "multiplePrimaryProfiles",
+        "transitiveProfileClosureRequired",
+        "profileAndFacetConflictsRejected",
+        "unreachableNodesRejected",
+        "cycles",
+        "digestBindingsRequired",
+        "differentialConformanceRequired"
+      ]
+    },
+    "SemanticProfileDefinition": {
+      "type": "object",
+      "title": "Semantic Profile Definition",
+      "additionalProperties": false,
+      "properties": {
+        "profileId": {
+          "$ref": "#/$defs/SemanticProfileId"
+        },
+        "semanticObligation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "operationRoles": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/OperationRole"
+          },
+          "uniqueItems": true,
+          "minItems": 1
+        },
+        "primaryEligible": {
+          "type": "boolean"
+        },
+        "requiredProfileRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SemanticProfileId"
+          },
+          "uniqueItems": true,
+          "default": []
+        },
+        "allowedFacetRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CompositionFacetId"
+          },
+          "uniqueItems": true,
+          "default": []
+        }
+      },
+      "required": [
+        "profileId",
+        "semanticObligation",
+        "operationRoles",
+        "primaryEligible"
+      ]
+    },
+    "CompositionFacetDefinition": {
+      "type": "object",
+      "title": "Composition Facet Definition",
+      "additionalProperties": false,
+      "properties": {
+        "facetId": {
+          "$ref": "#/$defs/CompositionFacetId"
+        },
+        "semanticObligation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "requiredProfileRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SemanticProfileId"
+          },
+          "uniqueItems": true,
+          "default": []
+        }
+      },
+      "required": [
+        "facetId",
+        "semanticObligation"
+      ]
+    },
+    "ProfileConflict": {
+      "type": "object",
+      "title": "Profile Conflict",
+      "additionalProperties": false,
+      "properties": {
+        "leftRef": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/SemanticProfileId"
+            },
+            {
+              "$ref": "#/$defs/CompositionFacetId"
+            }
+          ]
+        },
+        "rightRef": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/SemanticProfileId"
+            },
+            {
+              "$ref": "#/$defs/CompositionFacetId"
+            }
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "leftRef",
+        "rightRef",
+        "reason"
+      ]
+    },
+    "FactValue": {
+      "type": "object",
+      "title": "Fact Value",
+      "additionalProperties": false,
+      "properties": {
+        "factTypeRef": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "value": {
+          "$ref": "#/$defs/OfficialJsonValue"
+        }
+      },
+      "required": [
+        "factTypeRef",
+        "value"
+      ]
+    },
+    "BindingKind": {
+      "type": "string",
+      "title": "Binding Kind",
+      "enum": [
+        "direct-call",
+        "closure",
+        "partial",
+        "partial-with-placeholder",
+        "handler-registry",
+        "callable-object",
+        "decorator"
+      ]
+    },
+    "HigherOrderBindingPolicy": {
+      "type": "object",
+      "title": "Higher Order Binding Policy",
+      "additionalProperties": false,
+      "properties": {
+        "higherOrderBinding": {
+          "type": "string",
+          "const": "allowed-when-signatures-compose"
+        },
+        "fluentPipelines": {
+          "type": "string",
+          "const": "discouraged"
+        },
+        "bindingIdentity": {
+          "type": "string",
+          "const": "explicit"
+        },
+        "bindingProvenance": {
+          "type": "string",
+          "const": "required"
+        },
+        "allowedBindingKinds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/BindingKind"
+          },
+          "uniqueItems": true,
+          "minItems": 1
+        },
+        "signatureResolutionPolicyRef": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        }
+      },
+      "required": [
+        "higherOrderBinding",
+        "fluentPipelines",
+        "bindingIdentity",
+        "bindingProvenance",
+        "allowedBindingKinds",
+        "signatureResolutionPolicyRef"
+      ]
+    },
+    "AnnotationPolicy": {
+      "type": "object",
+      "title": "Annotation Policy",
+      "additionalProperties": false,
+      "properties": {
+        "evaluation": {
+          "type": "string",
+          "const": "deferred"
+        },
+        "resolutionPhase": {
+          "type": "string",
+          "enum": [
+            "binding-qualification",
+            "generation",
+            "runtime-admission"
+          ]
+        },
+        "format": {
+          "type": "string",
+          "enum": [
+            "value",
+            "forward-ref",
+            "string"
+          ]
+        },
+        "preserveAnnotatedMetadata": {
+          "type": "boolean",
+          "const": true
+        },
+        "unresolvedForwardRefs": {
+          "type": "string",
+          "enum": [
+            "preserve",
+            "reject",
+            "defer"
+          ]
+        },
+        "evaluationTrust": {
+          "type": "string",
+          "enum": [
+            "trusted-only",
+            "isolated",
+            "forbidden"
+          ]
+        }
+      },
+      "required": [
+        "evaluation",
+        "resolutionPhase",
+        "format",
+        "preserveAnnotatedMetadata",
+        "unresolvedForwardRefs",
+        "evaluationTrust"
+      ]
+    },
+    "CallableInspectionPolicy": {
+      "type": "object",
+      "title": "Callable Inspection Policy",
+      "additionalProperties": false,
+      "properties": {
+        "policyId": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "followWrapped": {
+          "type": "boolean"
+        },
+        "annotationFormat": {
+          "type": "string",
+          "enum": [
+            "value",
+            "forward-ref",
+            "string"
+          ]
+        },
+        "evaluateStrings": {
+          "type": "boolean"
+        },
+        "resolveBeforeCompatibilityCheck": {
+          "type": "boolean",
+          "const": true
+        }
+      },
+      "required": [
+        "policyId",
+        "followWrapped",
+        "annotationFormat",
+        "evaluateStrings",
+        "resolveBeforeCompatibilityCheck"
+      ]
+    },
+    "ConcurrencyPolicy": {
+      "type": "object",
+      "title": "Concurrency Policy",
+      "additionalProperties": false,
+      "properties": {
+        "freeThreadedCompatibility": {
+          "type": "string",
+          "enum": [
+            "required",
+            "qualified",
+            "not-required"
+          ]
+        },
+        "registryMutation": {
+          "type": "string",
+          "const": "frozen-before-execution"
+        },
+        "mutableCacheSynchronization": {
+          "type": "string",
+          "const": "explicit"
+        },
+        "gilSerializationAssumed": {
+          "type": "boolean",
+          "const": false
+        }
+      },
+      "required": [
+        "freeThreadedCompatibility",
+        "registryMutation",
+        "mutableCacheSynchronization",
+        "gilSerializationAssumed"
+      ]
+    },
+    "IsolationPolicy": {
+      "type": "object",
+      "title": "Isolation Policy",
+      "additionalProperties": false,
+      "properties": {
+        "multipleInterpreterPortability": {
+          "type": "string",
+          "enum": [
+            "required",
+            "qualified",
+            "not-required"
+          ]
+        },
+        "registryDefinition": {
+          "type": "string",
+          "const": "declarative"
+        },
+        "runtimeRegistry": {
+          "type": "string",
+          "const": "reconstructible-per-interpreter"
+        },
+        "processGlobalIdentityRequired": {
+          "type": "boolean",
+          "const": false
+        }
+      },
+      "required": [
+        "multipleInterpreterPortability",
+        "registryDefinition",
+        "runtimeRegistry",
+        "processGlobalIdentityRequired"
+      ]
+    },
+    "TechnologyBinding": {
+      "type": "object",
+      "title": "Technology Binding",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "profileRef": {
+          "$ref": "#/$defs/SemanticProfileId"
+        },
+        "technology": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "distributionRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "bindingKind": {
+          "$ref": "#/$defs/BindingKind"
+        },
+        "bindingIdentity": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "bindingProvenanceRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "referenceBinding": {
+          "type": "boolean"
+        },
+        "optimizedFromBindingRef": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ShapingIdentifier"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "id",
+        "profileRef",
+        "technology",
+        "version",
+        "distributionRef",
+        "bindingKind",
+        "bindingIdentity",
+        "bindingProvenanceRef",
+        "referenceBinding"
+      ]
+    },
+    "GenerationPlan": {
+      "type": "object",
+      "title": "Generation Plan",
+      "additionalProperties": false,
+      "properties": {
+        "planId": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "generatorBindingRef": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "profileSelectionRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "annotationPolicyRef": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "inputRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/OfficialContentRef"
+          },
+          "minItems": 1
+        },
+        "outputPath": {
+          "type": "string",
+          "minLength": 1
+        },
+        "templateMechanism": {
+          "type": "string",
+          "enum": [
+            "python-t-string",
+            "format-template",
+            "syntax-tree",
+            "generator-native"
+          ]
+        },
+        "qualificationSequence": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "validate-interpolations"
+            },
+            {
+              "const": "render"
+            },
+            {
+              "const": "ast-parse"
+            },
+            {
+              "const": "compile"
+            },
+            {
+              "const": "format"
+            },
+            {
+              "const": "digest"
+            }
+          ],
+          "items": false,
+          "minItems": 6,
+          "maxItems": 6
+        }
+      },
+      "required": [
+        "planId",
+        "generatorBindingRef",
+        "profileSelectionRef",
+        "annotationPolicyRef",
+        "inputRefs",
+        "outputPath",
+        "templateMechanism",
+        "qualificationSequence"
+      ]
+    },
+    "GeneratedArtifactProvenance": {
+      "type": "object",
+      "title": "Generated Artifact Provenance",
+      "additionalProperties": false,
+      "properties": {
+        "artifactRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "generationPlanRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "generatorRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "inputRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/OfficialContentRef"
+          },
+          "minItems": 1
+        },
+        "profileSelectionRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "annotationPolicyRef": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        }
+      },
+      "required": [
+        "artifactRef",
+        "generationPlanRef",
+        "generatorRef",
+        "inputRefs",
+        "profileSelectionRef",
+        "annotationPolicyRef"
+      ]
+    },
+    "Sha256Digest": {
+      "type": "string",
+      "title": "SHA-256 Digest",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "CapabilityProviderKind": {
+      "type": "string",
+      "title": "Capability Provider Kind",
+      "enum": [
+        "factory",
+        "alias",
+        "context"
+      ]
+    },
+    "CapabilityCachePolicy": {
+      "type": "string",
+      "title": "Capability Cache Policy",
+      "enum": [
+        "transient",
+        "scoped"
+      ]
+    },
+    "DependencySourceKind": {
+      "type": "string",
+      "title": "Dependency Source Kind",
+      "enum": [
+        "provider",
+        "static",
+        "context"
+      ]
+    },
+    "DependencyCardinality": {
+      "type": "string",
+      "title": "Dependency Cardinality",
+      "enum": [
+        "one",
+        "optional",
+        "union"
+      ]
+    },
+    "DependencySelectionPolicy": {
+      "type": "string",
+      "title": "Dependency Selection Policy",
+      "enum": [
+        "direct",
+        "explicit-union-selection",
+        "declared-optional-absence"
+      ]
+    },
+    "FinalizerMode": {
+      "type": "string",
+      "title": "Finalizer Mode",
+      "enum": [
+        "synchronous",
+        "asynchronous",
+        "synchronous-or-asynchronous"
+      ]
+    },
+    "ContainerInjectionLocation": {
+      "type": "string",
+      "title": "Container Injection Location",
+      "enum": [
+        "composition-root",
+        "framework-adapter",
+        "child-scope-builder",
+        "generic-integration-boundary"
+      ]
+    },
+    "CapabilityScopeDefinition": {
+      "type": "object",
+      "title": "Capability Scope Definition",
+      "additionalProperties": false,
+      "properties": {
+        "scopeId": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "parentScopeRef": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ShapingIdentifier"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "lifetimeRank": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "scopeId",
+        "parentScopeRef",
+        "lifetimeRank"
+      ]
+    },
+    "CapabilityLifetimeEdge": {
+      "type": "object",
+      "title": "Capability Lifetime Edge",
+      "additionalProperties": false,
+      "properties": {
+        "longerLivedScopeRef": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "shorterLivedScopeRef": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        }
+      },
+      "required": [
+        "longerLivedScopeRef",
+        "shorterLivedScopeRef"
+      ]
+    },
+    "CapabilityContextDefinition": {
+      "type": "object",
+      "title": "Capability Context Definition",
+      "additionalProperties": false,
+      "properties": {
+        "contextId": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "capabilityRef": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "scopeRef": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "required": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "contextId",
+        "capabilityRef",
+        "scopeRef",
+        "required"
+      ]
+    },
+    "ProviderDependencyDeclaration": {
+      "type": "object",
+      "title": "Provider Dependency Declaration",
+      "additionalProperties": false,
+      "properties": {
+        "parameter": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "sourceKind": {
+          "$ref": "#/$defs/DependencySourceKind"
+        },
+        "sourceRef": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "staticValue": {
+          "$ref": "#/$defs/OfficialJsonValue"
+        },
+        "cardinality": {
+          "$ref": "#/$defs/DependencyCardinality"
+        },
+        "selectionPolicy": {
+          "$ref": "#/$defs/DependencySelectionPolicy"
+        }
+      },
+      "required": [
+        "parameter",
+        "sourceKind",
+        "cardinality",
+        "selectionPolicy"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "sourceKind": {
+                "enum": [
+                  "provider",
+                  "context"
+                ]
+              }
+            },
+            "required": [
+              "sourceKind"
+            ]
+          },
+          "then": {
+            "required": [
+              "sourceRef"
+            ],
+            "not": {
+              "required": [
+                "staticValue"
+              ]
+            }
+          },
+          "else": {
+            "required": [
+              "staticValue"
+            ],
+            "not": {
+              "required": [
+                "sourceRef"
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "cardinality": {
+                "const": "union"
+              }
+            },
+            "required": [
+              "cardinality"
+            ]
+          },
+          "then": {
+            "properties": {
+              "selectionPolicy": {
+                "const": "explicit-union-selection"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "cardinality": {
+                "const": "optional"
+              }
+            },
+            "required": [
+              "cardinality"
+            ]
+          },
+          "then": {
+            "properties": {
+              "selectionPolicy": {
+                "const": "declared-optional-absence"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "cardinality": {
+                "const": "one"
+              }
+            },
+            "required": [
+              "cardinality"
+            ]
+          },
+          "then": {
+            "properties": {
+              "selectionPolicy": {
+                "const": "direct"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "ManagedCapabilityPolicy": {
+      "type": "object",
+      "title": "Managed Capability Policy",
+      "additionalProperties": false,
+      "properties": {
+        "finalizerRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "mode": {
+          "$ref": "#/$defs/FinalizerMode"
+        },
+        "ordering": {
+          "type": "string",
+          "const": "reverse-acquisition"
+        },
+        "failurePolicy": {
+          "type": "string",
+          "enum": [
+            "collect-and-continue",
+            "stop-after-failure"
+          ]
+        }
+      },
+      "required": [
+        "finalizerRef",
+        "mode",
+        "ordering",
+        "failurePolicy"
+      ]
+    },
+    "CapabilityProviderDeclaration": {
+      "type": "object",
+      "title": "Capability Provider Declaration",
+      "additionalProperties": false,
+      "properties": {
+        "providerId": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "providerKind": {
+          "$ref": "#/$defs/CapabilityProviderKind"
+        },
+        "boundCapabilityRef": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "creatorRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "targetProviderRef": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "contextRef": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "scopeRef": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "cachePolicy": {
+          "$ref": "#/$defs/CapabilityCachePolicy"
+        },
+        "dependencies": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ProviderDependencyDeclaration"
+          },
+          "default": []
+        },
+        "managedCapability": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ManagedCapabilityPolicy"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "sourceLocation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "declarationProvenanceRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        }
+      },
+      "required": [
+        "providerId",
+        "providerKind",
+        "boundCapabilityRef",
+        "scopeRef",
+        "cachePolicy",
+        "sourceLocation",
+        "declarationProvenanceRef"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "providerKind": {
+                "const": "factory"
+              }
+            },
+            "required": [
+              "providerKind"
+            ]
+          },
+          "then": {
+            "required": [
+              "creatorRef"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "targetProviderRef"
+                  ]
+                },
+                {
+                  "required": [
+                    "contextRef"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "providerKind": {
+                "const": "alias"
+              }
+            },
+            "required": [
+              "providerKind"
+            ]
+          },
+          "then": {
+            "required": [
+              "targetProviderRef"
+            ],
+            "properties": {
+              "dependencies": {
+                "maxItems": 0
+              },
+              "managedCapability": {
+                "type": "null"
+              }
+            },
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "creatorRef"
+                  ]
+                },
+                {
+                  "required": [
+                    "contextRef"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "providerKind": {
+                "const": "context"
+              }
+            },
+            "required": [
+              "providerKind"
+            ]
+          },
+          "then": {
+            "required": [
+              "contextRef"
+            ],
+            "properties": {
+              "dependencies": {
+                "maxItems": 0
+              },
+              "managedCapability": {
+                "type": "null"
+              }
+            },
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "creatorRef"
+                  ]
+                },
+                {
+                  "required": [
+                    "targetProviderRef"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "CompositionRootDefinition": {
+      "type": "object",
+      "title": "Composition Root Definition",
+      "additionalProperties": false,
+      "properties": {
+        "rootId": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "sourceRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "rootProviderRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ShapingIdentifier"
+          },
+          "uniqueItems": true,
+          "minItems": 1
+        },
+        "containerInjectionLocations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ContainerInjectionLocation"
+          },
+          "uniqueItems": true,
+          "minItems": 1
+        },
+        "concreteSelectionOutsideRoot": {
+          "type": "boolean",
+          "const": false
+        }
+      },
+      "required": [
+        "rootId",
+        "sourceRef",
+        "rootProviderRefs",
+        "containerInjectionLocations",
+        "concreteSelectionOutsideRoot"
+      ]
+    },
+    "CapabilityOverrideDeclaration": {
+      "type": "object",
+      "title": "Capability Override Declaration",
+      "additionalProperties": false,
+      "properties": {
+        "overrideId": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "providerRef": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "replacementProviderRef": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "purpose": {
+          "type": "string",
+          "enum": [
+            "qualification",
+            "test",
+            "environment",
+            "integration"
+          ]
+        },
+        "allowedScopeRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ShapingIdentifier"
+          },
+          "uniqueItems": true,
+          "minItems": 1
+        },
+        "provenanceRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        }
+      },
+      "required": [
+        "overrideId",
+        "providerRef",
+        "replacementProviderRef",
+        "purpose",
+        "allowedScopeRefs",
+        "provenanceRef"
+      ]
+    },
+    "CapabilityAssemblyQualificationPolicy": {
+      "type": "object",
+      "title": "Capability Assembly Qualification Policy",
+      "additionalProperties": false,
+      "properties": {
+        "registrationLifecycle": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "declare"
+            },
+            {
+              "const": "validate"
+            },
+            {
+              "const": "freeze"
+            },
+            {
+              "const": "compile"
+            },
+            {
+              "const": "execute"
+            }
+          ],
+          "items": false,
+          "minItems": 5,
+          "maxItems": 5
+        },
+        "invertedScopeDependencies": {
+          "type": "string",
+          "const": "reject"
+        },
+        "aliasQualification": {
+          "type": "string",
+          "const": "terminal-provider"
+        },
+        "unionResolution": {
+          "type": "string",
+          "const": "explicit-selection-required"
+        },
+        "optionalResolution": {
+          "type": "string",
+          "const": "declared-absence-semantics"
+        },
+        "containerInjection": {
+          "type": "string",
+          "const": "integration-boundaries-only"
+        },
+        "registryMutationInvalidatesPlans": {
+          "type": "boolean",
+          "const": true
+        },
+        "validationAndResolutionSharePlan": {
+          "type": "boolean",
+          "const": true
+        },
+        "finalizationOrder": {
+          "type": "string",
+          "const": "lifo"
+        }
+      },
+      "required": [
+        "registrationLifecycle",
+        "invertedScopeDependencies",
+        "aliasQualification",
+        "unionResolution",
+        "optionalResolution",
+        "containerInjection",
+        "registryMutationInvalidatesPlans",
+        "validationAndResolutionSharePlan",
+        "finalizationOrder"
+      ]
+    },
+    "CapabilityAssemblyTechnologyBinding": {
+      "type": "object",
+      "title": "Capability Assembly Technology Binding",
+      "additionalProperties": false,
+      "properties": {
+        "bindingId": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "facetRef": {
+          "type": "string",
+          "const": "capability-assembly"
+        },
+        "technology": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "distributionRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "providerKinds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CapabilityProviderKind"
+          },
+          "uniqueItems": true,
+          "minItems": 1
+        },
+        "resolverStrategy": {
+          "type": "string",
+          "enum": [
+            "compiled-closure-graph",
+            "interpreted-provider-graph"
+          ]
+        },
+        "resolutionMode": {
+          "type": "string",
+          "enum": [
+            "synchronous",
+            "asynchronous",
+            "synchronous-with-async-finalization"
+          ]
+        },
+        "providerDiscovery": {
+          "type": "string",
+          "const": "declared-only"
+        }
+      },
+      "required": [
+        "bindingId",
+        "facetRef",
+        "technology",
+        "version",
+        "distributionRef",
+        "providerKinds",
+        "resolverStrategy",
+        "resolutionMode",
+        "providerDiscovery"
+      ]
+    },
+    "ProviderDependencySlot": {
+      "type": "object",
+      "title": "Provider Dependency Slot",
+      "additionalProperties": false,
+      "properties": {
+        "parameter": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "requestedCapabilityRef": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "providerRef": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "terminalProviderRef": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "cardinality": {
+          "$ref": "#/$defs/DependencyCardinality"
+        },
+        "selectionPolicy": {
+          "$ref": "#/$defs/DependencySelectionPolicy"
+        }
+      },
+      "required": [
+        "parameter",
+        "requestedCapabilityRef",
+        "providerRef",
+        "terminalProviderRef",
+        "cardinality",
+        "selectionPolicy"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "cardinality": {
+                "const": "union"
+              }
+            },
+            "required": [
+              "cardinality"
+            ]
+          },
+          "then": {
+            "properties": {
+              "selectionPolicy": {
+                "const": "explicit-union-selection"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "cardinality": {
+                "const": "optional"
+              }
+            },
+            "required": [
+              "cardinality"
+            ]
+          },
+          "then": {
+            "properties": {
+              "selectionPolicy": {
+                "const": "declared-optional-absence"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "cardinality": {
+                "const": "one"
+              }
+            },
+            "required": [
+              "cardinality"
+            ]
+          },
+          "then": {
+            "properties": {
+              "selectionPolicy": {
+                "const": "direct"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "StaticArgumentSlot": {
+      "type": "object",
+      "title": "Static Argument Slot",
+      "additionalProperties": false,
+      "properties": {
+        "parameter": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "value": {
+          "$ref": "#/$defs/OfficialJsonValue"
+        }
+      },
+      "required": [
+        "parameter",
+        "value"
+      ]
+    },
+    "ContextDependencySlot": {
+      "type": "object",
+      "title": "Context Dependency Slot",
+      "additionalProperties": false,
+      "properties": {
+        "parameter": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "contextRef": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "absenceSemantics": {
+          "type": "string",
+          "enum": [
+            "reject",
+            "inject-none",
+            "use-declared-default"
+          ]
+        }
+      },
+      "required": [
+        "parameter",
+        "contextRef",
+        "required",
+        "absenceSemantics"
+      ]
+    },
+    "ProviderWiringPlan": {
+      "type": "object",
+      "title": "Provider Wiring Plan",
+      "additionalProperties": false,
+      "properties": {
+        "providerRef": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "creatorSignatureDigest": {
+          "$ref": "#/$defs/Sha256Digest"
+        },
+        "scopeRef": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "providerDependencies": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ProviderDependencySlot"
+          },
+          "default": []
+        },
+        "staticArguments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/StaticArgumentSlot"
+          },
+          "default": []
+        },
+        "contextDependencies": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ContextDependencySlot"
+          },
+          "default": []
+        },
+        "unwireableParameters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ShapingIdentifier"
+          },
+          "uniqueItems": true,
+          "default": []
+        },
+        "terminalProviderRef": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "resolverIdentity": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        }
+      },
+      "required": [
+        "providerRef",
+        "creatorSignatureDigest",
+        "scopeRef",
+        "providerDependencies",
+        "staticArguments",
+        "contextDependencies",
+        "unwireableParameters",
+        "terminalProviderRef",
+        "resolverIdentity"
+      ]
+    },
+    "GraphValidationEventKind": {
+      "type": "string",
+      "title": "Graph Validation Event Kind",
+      "enum": [
+        "node-entered",
+        "edge",
+        "cycle",
+        "dependencies-error",
+        "scope-inversion",
+        "alias-terminal"
+      ]
+    },
+    "GraphValidationPolicy": {
+      "type": "object",
+      "title": "Graph Validation Policy",
+      "additionalProperties": false,
+      "properties": {
+        "traversalEventKinds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/GraphValidationEventKind"
+          },
+          "uniqueItems": true,
+          "minItems": 1
+        },
+        "judgmentMode": {
+          "type": "string",
+          "const": "policy-fold"
+        },
+        "cycles": {
+          "type": "string",
+          "const": "reject"
+        },
+        "unwireableParameters": {
+          "type": "string",
+          "const": "reject"
+        },
+        "scopeInversions": {
+          "type": "string",
+          "const": "reject"
+        }
+      },
+      "required": [
+        "traversalEventKinds",
+        "judgmentMode",
+        "cycles",
+        "unwireableParameters",
+        "scopeInversions"
+      ]
+    },
+    "CapabilityContextOverlay": {
+      "type": "object",
+      "title": "Capability Context Overlay",
+      "additionalProperties": false,
+      "properties": {
+        "scopeRef": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "values": {
+          "type": "object",
+          "patternProperties": {
+            "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$": {
+              "$ref": "#/$defs/OfficialJsonValue"
+            }
+          },
+          "additionalProperties": false,
+          "minProperties": 1
+        }
+      },
+      "required": [
+        "scopeRef",
+        "values"
+      ]
+    },
+    "CapabilityOverrideApplication": {
+      "type": "object",
+      "title": "Capability Override Application",
+      "additionalProperties": false,
+      "properties": {
+        "overrideRef": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "providerRef": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "replacementProviderRef": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "scopeRef": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "purpose": {
+          "type": "string",
+          "enum": [
+            "qualification",
+            "test",
+            "environment",
+            "integration"
+          ]
+        },
+        "provenanceRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        }
+      },
+      "required": [
+        "overrideRef",
+        "providerRef",
+        "replacementProviderRef",
+        "scopeRef",
+        "purpose",
+        "provenanceRef"
+      ]
+    },
+    "ManagedCapabilityEvent": {
+      "type": "object",
+      "title": "Managed Capability Event",
+      "additionalProperties": false,
+      "properties": {
+        "sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "providerRef": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "operation": {
+          "type": "string",
+          "enum": [
+            "acquire",
+            "finalize"
+          ]
+        },
+        "outcome": {
+          "type": "string",
+          "enum": [
+            "succeeded",
+            "failed"
+          ]
+        }
+      },
+      "required": [
+        "sequence",
+        "providerRef",
+        "operation",
+        "outcome"
+      ]
+    },
+    "CapabilityGraphFinding": {
+      "type": "object",
+      "title": "Capability Graph Finding",
+      "additionalProperties": false,
+      "properties": {
+        "eventKind": {
+          "$ref": "#/$defs/GraphValidationEventKind"
+        },
+        "subjectRef": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "severity": {
+          "type": "string",
+          "enum": [
+            "error",
+            "warning",
+            "information"
+          ]
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "eventKind",
+        "subjectRef",
+        "severity",
+        "message"
+      ]
+    },
+    "CapabilityProviderRegistryDocument": {
+      "type": "object",
+      "title": "Capability Provider Registry Document",
+      "additionalProperties": false,
+      "properties": {
+        "documentType": {
+          "type": "string",
+          "const": "capability-provider-registry",
+          "default": "capability-provider-registry"
+        },
+        "schemaVersion": {
+          "type": "string",
+          "const": "0.2.0",
+          "default": "0.2.0"
+        },
+        "registryId": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "implementationBindingRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "compositionRoots": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CompositionRootDefinition"
+          },
+          "minItems": 1
+        },
+        "scopes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CapabilityScopeDefinition"
+          },
+          "minItems": 1
+        },
+        "lifetimeOrder": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CapabilityLifetimeEdge"
+          },
+          "minItems": 1
+        },
+        "contexts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CapabilityContextDefinition"
+          },
+          "default": []
+        },
+        "providers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CapabilityProviderDeclaration"
+          },
+          "minItems": 1
+        },
+        "permittedOverrides": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CapabilityOverrideDeclaration"
+          },
+          "default": []
+        },
+        "qualification": {
+          "$ref": "#/$defs/CapabilityAssemblyQualificationPolicy"
+        }
+      },
+      "required": [
+        "registryId",
+        "implementationBindingRef",
+        "compositionRoots",
+        "scopes",
+        "lifetimeOrder",
+        "contexts",
+        "providers",
+        "permittedOverrides",
+        "qualification"
+      ]
+    },
+    "DependencyWiringPlanDocument": {
+      "type": "object",
+      "title": "Dependency Wiring Plan Document",
+      "additionalProperties": false,
+      "properties": {
+        "documentType": {
+          "type": "string",
+          "const": "dependency-wiring-plan",
+          "default": "dependency-wiring-plan"
+        },
+        "schemaVersion": {
+          "type": "string",
+          "const": "0.2.0",
+          "default": "0.2.0"
+        },
+        "planId": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "providerRegistryRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "compilerRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "annotationPolicyRef": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "providerPlans": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ProviderWiringPlan"
+          },
+          "minItems": 1
+        },
+        "graphDigest": {
+          "$ref": "#/$defs/Sha256Digest"
+        },
+        "graphValidation": {
+          "$ref": "#/$defs/GraphValidationPolicy"
+        },
+        "immutable": {
+          "type": "boolean",
+          "const": true
+        }
+      },
+      "required": [
+        "planId",
+        "providerRegistryRef",
+        "compilerRef",
+        "annotationPolicyRef",
+        "providerPlans",
+        "graphDigest",
+        "graphValidation",
+        "immutable"
+      ]
+    },
+    "CapabilityAssemblyRecord": {
+      "type": "object",
+      "title": "Capability Assembly Record",
+      "additionalProperties": false,
+      "properties": {
+        "documentType": {
+          "type": "string",
+          "const": "capability-assembly-record",
+          "default": "capability-assembly-record"
+        },
+        "schemaVersion": {
+          "type": "string",
+          "const": "0.2.0",
+          "default": "0.2.0"
+        },
+        "recordId": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "implementationBindingRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "providerRegistryRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "wiringPlanRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "resolverCompilerRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "compiledResolverGraphRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "rootProviderRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ShapingIdentifier"
+          },
+          "uniqueItems": true,
+          "minItems": 1
+        },
+        "activeScopePath": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ShapingIdentifier"
+          },
+          "minItems": 1
+        },
+        "contextOverlays": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CapabilityContextOverlay"
+          },
+          "default": []
+        },
+        "appliedOverrides": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CapabilityOverrideApplication"
+          },
+          "default": []
+        },
+        "managedCapabilityEvents": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ManagedCapabilityEvent"
+          },
+          "default": []
+        },
+        "validationFindings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CapabilityGraphFinding"
+          },
+          "default": []
+        },
+        "effectiveGraphDigest": {
+          "$ref": "#/$defs/Sha256Digest"
+        },
+        "finalizationOrder": {
+          "type": "string",
+          "const": "lifo"
+        }
+      },
+      "required": [
+        "recordId",
+        "implementationBindingRef",
+        "providerRegistryRef",
+        "wiringPlanRef",
+        "resolverCompilerRef",
+        "compiledResolverGraphRef",
+        "rootProviderRefs",
+        "activeScopePath",
+        "contextOverlays",
+        "appliedOverrides",
+        "managedCapabilityEvents",
+        "validationFindings",
+        "effectiveGraphDigest",
+        "finalizationOrder"
+      ]
+    },
+    "PytestFixtureScope": {
+      "type": "string",
+      "title": "Pytest Fixture Scope",
+      "enum": [
+        "session",
+        "package",
+        "module",
+        "class",
+        "function"
+      ]
+    },
+    "FixtureDependencyKind": {
+      "type": "string",
+      "title": "Fixture Dependency Kind",
+      "enum": [
+        "capability-type",
+        "provider"
+      ]
+    },
+    "GraphBoundaryAdapterBinding": {
+      "type": "object",
+      "title": "Graph Boundary Adapter Binding",
+      "additionalProperties": false,
+      "properties": {
+        "bindingId": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "bindingKind": {
+          "type": "string",
+          "const": "test-harness-adapter"
+        },
+        "sourceSurface": {
+          "type": "string",
+          "const": "dependency-provider"
+        },
+        "targetSurface": {
+          "type": "string",
+          "const": "pytest-fixture"
+        },
+        "adapterRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "technology": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "resolutionBoundary": {
+          "type": "string",
+          "const": "single-provider-graph-root"
+        },
+        "containerLookup": {
+          "type": "string",
+          "const": "named-fixture"
+        }
+      },
+      "required": [
+        "bindingId",
+        "bindingKind",
+        "sourceSurface",
+        "targetSurface",
+        "adapterRef",
+        "technology",
+        "version",
+        "resolutionBoundary",
+        "containerLookup"
+      ]
+    },
+    "FixtureScopeBridge": {
+      "type": "object",
+      "title": "Fixture Scope Bridge",
+      "additionalProperties": false,
+      "properties": {
+        "pytestScope": {
+          "$ref": "#/$defs/PytestFixtureScope"
+        },
+        "containerFixtureRef": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "containerPytestScope": {
+          "$ref": "#/$defs/PytestFixtureScope"
+        },
+        "diScopeRef": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "compatibility": {
+          "type": "string",
+          "const": "validated"
+        },
+        "qualificationEvidenceRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "fixtureMayOutliveContainer": {
+          "type": "boolean",
+          "const": false
+        },
+        "fixtureMayOutliveCapability": {
+          "type": "boolean",
+          "const": false
+        }
+      },
+      "required": [
+        "pytestScope",
+        "containerFixtureRef",
+        "containerPytestScope",
+        "diScopeRef",
+        "compatibility",
+        "qualificationEvidenceRef",
+        "fixtureMayOutliveContainer",
+        "fixtureMayOutliveCapability"
+      ]
+    },
+    "FixtureProjectionDefinition": {
+      "type": "object",
+      "title": "Fixture Projection Definition",
+      "additionalProperties": false,
+      "properties": {
+        "fixtureRef": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "dependencyKind": {
+          "$ref": "#/$defs/FixtureDependencyKind"
+        },
+        "dependencyRef": {
+          "type": "string",
+          "minLength": 1
+        },
+        "providerRef": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "scopeBridge": {
+          "$ref": "#/$defs/FixtureScopeBridge"
+        },
+        "exposureMode": {
+          "type": "string",
+          "enum": [
+            "manual",
+            "bulk"
+          ]
+        },
+        "providerAttributeRef": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ShapingIdentifier"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "fixtureFactoryRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "bindingIdentity": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        }
+      },
+      "required": [
+        "fixtureRef",
+        "dependencyKind",
+        "dependencyRef",
+        "providerRef",
+        "scopeBridge",
+        "exposureMode",
+        "fixtureFactoryRef",
+        "bindingIdentity"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "exposureMode": {
+                "const": "bulk"
+              }
+            },
+            "required": [
+              "exposureMode"
+            ]
+          },
+          "then": {
+            "required": [
+              "providerAttributeRef"
+            ],
+            "properties": {
+              "providerAttributeRef": {
+                "$ref": "#/$defs/ShapingIdentifier"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "providerAttributeRef": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "DeclaredFixtureSurfaceProjection": {
+      "type": "object",
+      "title": "Declared Fixture Surface Projection",
+      "additionalProperties": false,
+      "properties": {
+        "providerGroupRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "attributeFilter": {
+          "type": "string",
+          "const": "declared-providers-only"
+        },
+        "fixtureNaming": {
+          "type": "string",
+          "const": "provider-attribute-name"
+        },
+        "nameCollisionCheck": {
+          "type": "string",
+          "const": "before-publication"
+        },
+        "collisionQualificationRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "moduleSelection": {
+          "type": "string",
+          "const": "explicit"
+        },
+        "publicationModuleRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "stackInspection": {
+          "type": "string",
+          "const": "forbidden"
+        }
+      },
+      "required": [
+        "providerGroupRef",
+        "attributeFilter",
+        "fixtureNaming",
+        "nameCollisionCheck",
+        "collisionQualificationRef",
+        "moduleSelection",
+        "publicationModuleRef",
+        "stackInspection"
+      ]
+    },
+    "QualificationFixtureProjectionDocument": {
+      "type": "object",
+      "title": "Qualification Fixture Projection Document",
+      "additionalProperties": false,
+      "properties": {
+        "documentType": {
+          "type": "string",
+          "const": "qualification-fixture-projection",
+          "default": "qualification-fixture-projection"
+        },
+        "schemaVersion": {
+          "type": "string",
+          "const": "0.2.0",
+          "default": "0.2.0"
+        },
+        "projectionId": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "implementationBindingRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "providerRegistryRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "wiringPlanRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "adapterBinding": {
+          "$ref": "#/$defs/GraphBoundaryAdapterBinding"
+        },
+        "fixtureProjections": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FixtureProjectionDefinition"
+          },
+          "minItems": 1
+        },
+        "bulkProjection": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/DeclaredFixtureSurfaceProjection"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "pipeline": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "validate-provider-graph"
+            },
+            {
+              "const": "freeze-registry"
+            },
+            {
+              "const": "select-qualification-roots"
+            },
+            {
+              "const": "validate-scope-compatibility"
+            },
+            {
+              "const": "generate-fixture-bindings"
+            },
+            {
+              "const": "detect-name-collisions"
+            },
+            {
+              "const": "publish-fixture-surface"
+            },
+            {
+              "const": "execute-qualification"
+            }
+          ],
+          "items": false,
+          "minItems": 8,
+          "maxItems": 8
+        }
+      },
+      "required": [
+        "projectionId",
+        "implementationBindingRef",
+        "providerRegistryRef",
+        "wiringPlanRef",
+        "adapterBinding",
+        "fixtureProjections",
+        "bulkProjection",
+        "pipeline"
+      ]
+    },
+    "ShapingPolicyDocument": {
+      "type": "object",
+      "title": "Shaping Policy Document",
+      "additionalProperties": false,
+      "properties": {
+        "documentType": {
+          "type": "string",
+          "const": "shaping-policy",
+          "default": "shaping-policy"
+        },
+        "schemaVersion": {
+          "type": "string",
+          "const": "0.2.0",
+          "default": "0.2.0"
+        },
+        "policyId": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "registryRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "entryNodeRef": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "factTypes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FactTypeDefinition"
+          },
+          "minItems": 1
+        },
+        "predicates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PredicateDefinition"
+          },
+          "minItems": 1
+        },
+        "nodes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ShapingFlowNode"
+          },
+          "minItems": 1
+        },
+        "qualification": {
+          "$ref": "#/$defs/ShapingQualificationPolicy"
+        }
+      },
+      "required": [
+        "policyId",
+        "registryRef",
+        "entryNodeRef",
+        "factTypes",
+        "predicates",
+        "nodes",
+        "qualification"
+      ]
+    },
+    "ProfileRegistryDocument": {
+      "type": "object",
+      "title": "Profile Registry Document",
+      "additionalProperties": false,
+      "properties": {
+        "documentType": {
+          "type": "string",
+          "const": "shaping-profile-registry",
+          "default": "shaping-profile-registry"
+        },
+        "schemaVersion": {
+          "type": "string",
+          "const": "0.2.0",
+          "default": "0.2.0"
+        },
+        "registryId": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "profiles": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SemanticProfileDefinition"
+          },
+          "minItems": 1
+        },
+        "facets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CompositionFacetDefinition"
+          },
+          "default": []
+        },
+        "conflicts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ProfileConflict"
+          },
+          "default": []
+        }
+      },
+      "required": [
+        "registryId",
+        "profiles"
+      ]
+    },
+    "ImplementationBindingDocument": {
+      "type": "object",
+      "title": "Implementation Binding Document",
+      "additionalProperties": false,
+      "properties": {
+        "documentType": {
+          "type": "string",
+          "const": "shaping-implementation-binding",
+          "default": "shaping-implementation-binding"
+        },
+        "schemaVersion": {
+          "type": "string",
+          "const": "0.2.0",
+          "default": "0.2.0"
+        },
+        "bindingId": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "policyRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "registryRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "higherOrderPolicy": {
+          "$ref": "#/$defs/HigherOrderBindingPolicy"
+        },
+        "annotationPolicies": {
+          "type": "object",
+          "patternProperties": {
+            "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$": {
+              "$ref": "#/$defs/AnnotationPolicy"
+            }
+          },
+          "additionalProperties": false,
+          "minProperties": 1
+        },
+        "callableInspectionPolicies": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CallableInspectionPolicy"
+          },
+          "minItems": 1
+        },
+        "concurrencyPolicy": {
+          "$ref": "#/$defs/ConcurrencyPolicy"
+        },
+        "isolationPolicy": {
+          "$ref": "#/$defs/IsolationPolicy"
+        },
+        "technologyBindings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TechnologyBinding"
+          },
+          "minItems": 1
+        },
+        "capabilityAssemblyBindings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CapabilityAssemblyTechnologyBinding"
+          },
+          "default": []
+        },
+        "generationPlans": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/GenerationPlan"
+          },
+          "default": []
+        },
+        "generatedArtifacts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/GeneratedArtifactProvenance"
+          },
+          "default": []
+        },
+        "referenceOptimizedDifferentialConformance": {
+          "type": "boolean",
+          "const": true
+        }
+      },
+      "required": [
+        "bindingId",
+        "policyRef",
+        "registryRef",
+        "higherOrderPolicy",
+        "annotationPolicies",
+        "callableInspectionPolicies",
+        "concurrencyPolicy",
+        "isolationPolicy",
+        "technologyBindings",
+        "referenceOptimizedDifferentialConformance"
+      ]
+    },
+    "ShapingDecisionRecord": {
+      "type": "object",
+      "title": "Shaping Decision Record",
+      "additionalProperties": false,
+      "properties": {
+        "documentType": {
+          "type": "string",
+          "const": "shaping-decision-record",
+          "default": "shaping-decision-record"
+        },
+        "schemaVersion": {
+          "type": "string",
+          "const": "0.2.0",
+          "default": "0.2.0"
+        },
+        "decisionId": {
+          "$ref": "#/$defs/ShapingIdentifier"
+        },
+        "subjectRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "policyRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "registryRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "bindingRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "admittedFacts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FactValue"
+          },
+          "minItems": 1
+        },
+        "predicateOutcomes": {
+          "type": "object",
+          "patternProperties": {
+            "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false,
+          "minProperties": 1
+        },
+        "primaryProfileRef": {
+          "$ref": "#/$defs/SemanticProfileId"
+        },
+        "requiredProfileRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SemanticProfileId"
+          },
+          "uniqueItems": true,
+          "default": []
+        },
+        "resolvedProfileRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SemanticProfileId"
+          },
+          "uniqueItems": true,
+          "minItems": 1
+        },
+        "facetRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CompositionFacetId"
+          },
+          "uniqueItems": true,
+          "default": []
+        }
+      },
+      "required": [
+        "decisionId",
+        "subjectRef",
+        "policyRef",
+        "registryRef",
+        "bindingRef",
+        "admittedFacts",
+        "predicateOutcomes",
+        "primaryProfileRef",
+        "requiredProfileRefs",
+        "resolvedProfileRefs",
+        "facetRefs"
+      ]
+    },
+    "ImplementationPolicyExtensionDocument": {
+      "type": "object",
+      "title": "Implementation Policy Extension Document",
+      "description": "Companion implementation-policy document bound to an official Python Policy PPF generation-policy profile. It does not add properties to or modify the official schema.",
+      "additionalProperties": false,
+      "properties": {
+        "documentType": {
+          "type": "string",
+          "const": "implementation-policy-extension",
+          "default": "implementation-policy-extension"
+        },
+        "schemaVersion": {
+          "type": "string",
+          "const": "0.2.0",
+          "default": "0.2.0"
+        },
+        "extensionId": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$"
+        },
+        "baseContract": {
+          "$ref": "#/$defs/BaseContractBinding"
+        },
+        "profileRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "authorityAssignments": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "component": {
+                  "const": "json-schema"
+                },
+                "role": {
+                  "const": "canonical-contract"
+                }
+              },
+              "required": [
+                "component",
+                "role"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "component": {
+                  "const": "generated-pydantic"
+                },
+                "role": {
+                  "const": "schema-projection"
+                }
+              },
+              "required": [
+                "component",
+                "role"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "component": {
+                  "const": "attrs"
+                },
+                "role": {
+                  "const": "project-implementation"
+                }
+              },
+              "required": [
+                "component",
+                "role"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "component": {
+                  "const": "cattrs"
+                },
+                "role": {
+                  "const": "serialization-adapter"
+                }
+              },
+              "required": [
+                "component",
+                "role"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "component": {
+                  "const": "design-patterns"
+                },
+                "role": {
+                  "const": "advisory-vocabulary"
+                }
+              },
+              "required": [
+                "component",
+                "role"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "component": {
+                  "const": "refactorings"
+                },
+                "role": {
+                  "const": "advisory-recipe"
+                }
+              },
+              "required": [
+                "component",
+                "role"
+              ]
+            }
+          ],
+          "items": false,
+          "minItems": 6,
+          "maxItems": 6
+        },
+        "projection": {
+          "$ref": "#/$defs/SchemaProjectionPolicy"
+        },
+        "runtime": {
+          "$ref": "#/$defs/RuntimeRepresentationPolicy"
+        },
+        "patterns": {
+          "$ref": "#/$defs/DesignPatternPolicy"
+        },
+        "refactoring": {
+          "$ref": "#/$defs/RefactoringPolicy"
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/OfficialJsonValue"
+          },
+          "default": {}
+        }
+      },
+      "required": [
+        "extensionId",
+        "baseContract",
+        "profileRef",
+        "authorityAssignments",
+        "projection",
+        "runtime",
+        "patterns",
+        "refactoring"
+      ]
+    }
+  },
+  "discriminator": {
+    "propertyName": "documentType",
+    "mapping": {
+      "implementation-policy-extension": "#/$defs/ImplementationPolicyExtensionDocument",
+      "shaping-policy": "#/$defs/ShapingPolicyDocument",
+      "shaping-profile-registry": "#/$defs/ProfileRegistryDocument",
+      "shaping-implementation-binding": "#/$defs/ImplementationBindingDocument",
+      "shaping-decision-record": "#/$defs/ShapingDecisionRecord",
+      "capability-provider-registry": "#/$defs/CapabilityProviderRegistryDocument",
+      "dependency-wiring-plan": "#/$defs/DependencyWiringPlanDocument",
+      "capability-assembly-record": "#/$defs/CapabilityAssemblyRecord",
+      "qualification-fixture-projection": "#/$defs/QualificationFixtureProjectionDocument"
+    }
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/ImplementationPolicyExtensionDocument"
+    },
+    {
+      "$ref": "#/$defs/ShapingPolicyDocument"
+    },
+    {
+      "$ref": "#/$defs/ProfileRegistryDocument"
+    },
+    {
+      "$ref": "#/$defs/ImplementationBindingDocument"
+    },
+    {
+      "$ref": "#/$defs/ShapingDecisionRecord"
+    },
+    {
+      "$ref": "#/$defs/CapabilityProviderRegistryDocument"
+    },
+    {
+      "$ref": "#/$defs/DependencyWiringPlanDocument"
+    },
+    {
+      "$ref": "#/$defs/CapabilityAssemblyRecord"
+    },
+    {
+      "$ref": "#/$defs/QualificationFixtureProjectionDocument"
+    }
+  ]
+}

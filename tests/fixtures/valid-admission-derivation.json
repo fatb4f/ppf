@@ -1,0 +1,41 @@
+{
+  "catalogRef": {
+    "digest": "sha256:704af846e5f69b54186d1a038e6930c4883e852fa9ea8ad5d61e54cb41fa9a19",
+    "id": "catalog-1"
+  },
+  "derivationId": "derivation-1",
+  "derivations": [
+    {
+      "admission": {
+        "admitted": true,
+        "assignedReliability": "R3",
+        "catalogRuleRef": "rule-1",
+        "claimRef": "PY-GEN-001",
+        "id": "admission-1",
+        "observationRef": "obs-1",
+        "oracleResultRef": null,
+        "rejectionReason": null
+      },
+      "catalogRule": {
+        "assignedReliability": "R3",
+        "claimRef": "PY-GEN-001",
+        "id": "rule-1",
+        "limitations": [],
+        "oracleRef": null,
+        "probeRef": "ty-probe"
+      },
+      "observationProbeRef": "ty-probe"
+    }
+  ],
+  "documentType": "evidence-admission-derivation",
+  "judgeRef": {
+    "digest": "sha256:1818181818181818181818181818181818181818181818181818181818181818",
+    "id": "judge",
+    "uri": "https://example.invalid/judge"
+  },
+  "qualificationReportRef": {
+    "digest": "sha256:93481934809d4456e5d03d440fee9fc2860e818b24fb69e3a247eefda01383cf",
+    "id": "report-1"
+  },
+  "schemaVersion" : "0.2.0"
+}

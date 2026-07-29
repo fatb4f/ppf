@@ -1,0 +1,36 @@
+{
+  "schema": "source-provenance.v0",
+  "sources": [
+    {
+      "id": "agent-skills-specification",
+      "url": "https://agentskills.io/specification",
+      "repository": "agentskills/agentskills",
+      "path": "docs/specification.mdx",
+      "blob_sha": "20cf9f6b672391e3295733c7863480905de6b887"
+    },
+    {
+      "id": "openai-skill-creator",
+      "url": "https://github.com/openai/skills/tree/main/skills/.system/skill-creator",
+      "repository": "openai/skills",
+      "path": "skills/.system/skill-creator/SKILL.md"
+    },
+    {
+      "id": "openai-init-skill",
+      "repository": "openai/skills",
+      "path": "skills/.system/skill-creator/scripts/init_skill.py",
+      "blob_sha": "f90703eca8159a21a9684ed1df974c702d92f814"
+    },
+    {
+      "id": "openai-openai-yaml-generator",
+      "repository": "openai/skills",
+      "path": "skills/.system/skill-creator/scripts/generate_openai_yaml.py",
+      "blob_sha": "1a9d784f8704999daf55a2b9036094949d9af3f8"
+    },
+    {
+      "id": "agent-skills-reference-validator",
+      "url": "https://github.com/agentskills/agentskills/tree/main/skills-ref",
+      "repository": "agentskills/agentskills",
+      "path": "skills-ref/src/skills_ref/validator.py"
+    }
+  ]
+}

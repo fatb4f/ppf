@@ -1,0 +1,106 @@
+{
+  "documentType": "qualification-fixture-projection",
+  "schemaVersion": "0.2.0",
+  "projectionId": "rollout-pytest-capabilities",
+  "implementationBindingRef": {
+    "id": "python-3.14-default-shaping",
+    "digest": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+    "uri": "https://example.invalid/python-3.14-default-shaping.json",
+    "mediaType": "application/json"
+  },
+  "providerRegistryRef": {
+    "id": "rollout-capabilities",
+    "digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    "uri": "https://example.invalid/rollout-capabilities.json",
+    "mediaType": "application/json"
+  },
+  "wiringPlanRef": {
+    "id": "rollout-capability-wiring",
+    "digest": "sha256:777788889999aaaabbbbccccddddeeeeffff0000111122223333444455556666",
+    "uri": "https://example.invalid/rollout-capability-wiring.json",
+    "mediaType": "application/json"
+  },
+  "adapterBinding": {
+    "bindingId": "modern-di-pytest-adapter",
+    "bindingKind": "test-harness-adapter",
+    "sourceSurface": "dependency-provider",
+    "targetSurface": "pytest-fixture",
+    "adapterRef": {
+      "id": "modern-di-pytest",
+      "digest": "sha256:bbbbccccddddeeeeffff0000111122223333444455556666777788889999aaaa",
+      "uri": "https://example.invalid/modern-di-pytest.whl",
+      "mediaType": "application/zip"
+    },
+    "technology": "modern-di-pytest",
+    "version": "1.0",
+    "resolutionBoundary": "single-provider-graph-root",
+    "containerLookup": "named-fixture"
+  },
+  "fixtureProjections": [
+    {
+      "fixtureRef": "request-user-service",
+      "dependencyKind": "provider",
+      "dependencyRef": "user-service",
+      "providerRef": "user-service",
+      "scopeBridge": {
+        "pytestScope": "function",
+        "containerFixtureRef": "request-container",
+        "containerPytestScope": "function",
+        "diScopeRef": "request",
+        "compatibility": "validated",
+        "qualificationEvidenceRef": {
+          "id": "request-user-service-scope-check",
+          "digest": "sha256:ffff0000111122223333444455556666777788889999aaaabbbbccccddddeeee",
+          "uri": "https://example.invalid/request-user-service-scope-check.json",
+          "mediaType": "application/json"
+        },
+        "fixtureMayOutliveContainer": false,
+        "fixtureMayOutliveCapability": false
+      },
+      "exposureMode": "bulk",
+      "providerAttributeRef": "user-service",
+      "fixtureFactoryRef": {
+        "id": "modern-di-fixture-factory",
+        "digest": "sha256:ccccddddeeeeffff0000111122223333444455556666777788889999aaaabbbb",
+        "uri": "https://example.invalid/modern_di_pytest.py",
+        "mediaType": "text/x-python"
+      },
+      "bindingIdentity": "request-user-service-fixture"
+    }
+  ],
+  "bulkProjection": {
+    "providerGroupRef": {
+      "id": "rollout-dependencies-group",
+      "digest": "sha256:ddddeeeeffff0000111122223333444455556666777788889999aaaabbbbcccc",
+      "uri": "https://example.invalid/bindings.py#Dependencies",
+      "mediaType": "text/x-python"
+    },
+    "attributeFilter": "declared-providers-only",
+    "fixtureNaming": "provider-attribute-name",
+    "nameCollisionCheck": "before-publication",
+    "collisionQualificationRef": {
+      "id": "rollout-fixture-name-check",
+      "digest": "sha256:0000111122223333444455556666777788889999aaaabbbbccccddddeeeeffff",
+      "uri": "https://example.invalid/rollout-fixture-name-check.json",
+      "mediaType": "application/json"
+    },
+    "moduleSelection": "explicit",
+    "publicationModuleRef": {
+      "id": "rollout-pytest-module",
+      "digest": "sha256:eeeeffff0000111122223333444455556666777788889999aaaabbbbccccdddd",
+      "uri": "https://example.invalid/test_rollout.py",
+      "mediaType": "text/x-python"
+    },
+    "stackInspection": "forbidden"
+  },
+  "pipeline": [
+    "validate-provider-graph",
+    "freeze-registry",
+    "select-qualification-roots",
+    "validate-scope-compatibility",
+    "generate-fixture-bindings",
+    "detect-name-collisions",
+    "publish-fixture-surface",
+    "execute-qualification"
+  ]
+}

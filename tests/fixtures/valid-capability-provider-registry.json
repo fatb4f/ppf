@@ -1,0 +1,169 @@
+{
+  "documentType": "capability-provider-registry",
+  "schemaVersion": "0.2.0",
+  "registryId": "rollout-capabilities",
+  "implementationBindingRef": {
+    "id": "python-3.14-default-shaping",
+    "digest": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+    "uri": "https://example.invalid/python-3.14-default-shaping.json",
+    "mediaType": "application/json"
+  },
+  "compositionRoots": [
+    {
+      "rootId": "rollout-composition-root",
+      "sourceRef": {
+        "id": "rollout-bindings-source",
+        "digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+        "uri": "https://example.invalid/bindings.py",
+        "mediaType": "text/x-python"
+      },
+      "rootProviderRefs": [
+        "user-service"
+      ],
+      "containerInjectionLocations": [
+        "composition-root",
+        "child-scope-builder"
+      ],
+      "concreteSelectionOutsideRoot": false
+    }
+  ],
+  "scopes": [
+    {
+      "scopeId": "app",
+      "parentScopeRef": null,
+      "lifetimeRank": 0
+    },
+    {
+      "scopeId": "request",
+      "parentScopeRef": "app",
+      "lifetimeRank": 1
+    }
+  ],
+  "lifetimeOrder": [
+    {
+      "longerLivedScopeRef": "app",
+      "shorterLivedScopeRef": "request"
+    }
+  ],
+  "contexts": [
+    {
+      "contextId": "request-id",
+      "capabilityRef": "request-id-value",
+      "scopeRef": "request",
+      "required": true
+    }
+  ],
+  "providers": [
+    {
+      "providerId": "git-repository",
+      "providerKind": "factory",
+      "boundCapabilityRef": "repository-port",
+      "creatorRef": {
+        "id": "git-repository-creator",
+        "digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+        "uri": "https://example.invalid/git_repository.py",
+        "mediaType": "text/x-python"
+      },
+      "scopeRef": "app",
+      "cachePolicy": "scoped",
+      "dependencies": [],
+      "managedCapability": null,
+      "sourceLocation": "bindings.py:12",
+      "declarationProvenanceRef": {
+        "id": "git-repository-declaration",
+        "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "uri": "https://example.invalid/bindings.py#L12",
+        "mediaType": "text/x-python"
+      }
+    },
+    {
+      "providerId": "repository",
+      "providerKind": "alias",
+      "boundCapabilityRef": "repository-port",
+      "targetProviderRef": "git-repository",
+      "scopeRef": "app",
+      "cachePolicy": "transient",
+      "dependencies": [],
+      "managedCapability": null,
+      "sourceLocation": "bindings.py:18",
+      "declarationProvenanceRef": {
+        "id": "repository-alias-declaration",
+        "digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "uri": "https://example.invalid/bindings.py#L18",
+        "mediaType": "text/x-python"
+      }
+    },
+    {
+      "providerId": "request-context",
+      "providerKind": "context",
+      "boundCapabilityRef": "request-id-value",
+      "contextRef": "request-id",
+      "scopeRef": "request",
+      "cachePolicy": "transient",
+      "dependencies": [],
+      "managedCapability": null,
+      "sourceLocation": "bindings.py:22",
+      "declarationProvenanceRef": {
+        "id": "request-context-declaration",
+        "digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "uri": "https://example.invalid/bindings.py#L22",
+        "mediaType": "text/x-python"
+      }
+    },
+    {
+      "providerId": "user-service",
+      "providerKind": "factory",
+      "boundCapabilityRef": "user-service-port",
+      "creatorRef": {
+        "id": "user-service-creator",
+        "digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "uri": "https://example.invalid/user_service.py",
+        "mediaType": "text/x-python"
+      },
+      "scopeRef": "request",
+      "cachePolicy": "scoped",
+      "dependencies": [
+        {
+          "parameter": "repository",
+          "sourceKind": "provider",
+          "sourceRef": "repository",
+          "cardinality": "one",
+          "selectionPolicy": "direct"
+        },
+        {
+          "parameter": "request-id",
+          "sourceKind": "context",
+          "sourceRef": "request-id",
+          "cardinality": "one",
+          "selectionPolicy": "direct"
+        }
+      ],
+      "managedCapability": null,
+      "sourceLocation": "bindings.py:27",
+      "declarationProvenanceRef": {
+        "id": "user-service-declaration",
+        "digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "uri": "https://example.invalid/bindings.py#L27",
+        "mediaType": "text/x-python"
+      }
+    }
+  ],
+  "permittedOverrides": [],
+  "qualification": {
+    "registrationLifecycle": [
+      "declare",
+      "validate",
+      "freeze",
+      "compile",
+      "execute"
+    ],
+    "invertedScopeDependencies": "reject",
+    "aliasQualification": "terminal-provider",
+    "unionResolution": "explicit-selection-required",
+    "optionalResolution": "declared-absence-semantics",
+    "containerInjection": "integration-boundaries-only",
+    "registryMutationInvalidatesPlans": true,
+    "validationAndResolutionSharePlan": true,
+    "finalizationOrder": "lifo"
+  }
+}

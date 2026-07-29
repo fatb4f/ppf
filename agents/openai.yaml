@@ -1,0 +1,4 @@
+interface:
+  display_name: "Python Policy PPF"
+  short_description: "Build validated Python policy evaluations"
+  default_prompt: "Use $python-policy-ppf to compile and validate this Python 3.14 policy evaluation bundle."

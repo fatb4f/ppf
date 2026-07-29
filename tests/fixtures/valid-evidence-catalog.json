@@ -1,0 +1,19 @@
+{
+  "catalogId": "catalog-1",
+  "documentType": "evaluation-evidence-catalog",
+  "profileRef": {
+    "digest": "sha256:26df9b077b7b5a46fdd421e3187a81005f9ca28c788a4df80b509d3a386d2753",
+    "id": "python-3.14-default"
+  },
+  "rules": [
+    {
+      "assignedReliability": "R3",
+      "claimRef": "PY-GEN-001",
+      "id": "rule-1",
+      "limitations": [],
+      "oracleRef": null,
+      "probeRef": "ty-probe"
+    }
+  ],
+  "schemaVersion" : "0.2.0"
+}

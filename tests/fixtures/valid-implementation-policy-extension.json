@@ -1,0 +1,302 @@
+{
+  "documentType": "implementation-policy-extension",
+  "schemaVersion" : "0.2.0",
+  "extensionId": "python-3.14-implementation-policy",
+  "baseContract": {
+    "schemaId": "urn:python-policy-ppf:generation-policy:0.2.0",
+    "schemaVersion": "0.2.0",
+    "digest": "sha256:06055b436bb224a4fc76eef96821d7e467eeb1c047b78807945c22e06d7d4eaf"
+  },
+  "profileRef": {
+    "id": "python-3.14-default",
+    "digest": "sha256:26df9b077b7b5a46fdd421e3187a81005f9ca28c788a4df80b509d3a386d2753",
+    "uri": "tests/fixtures/valid-profile.json",
+    "mediaType": "application/json"
+  },
+  "authorityAssignments": [
+    {
+      "component": "json-schema",
+      "role": "canonical-contract"
+    },
+    {
+      "component": "generated-pydantic",
+      "role": "schema-projection"
+    },
+    {
+      "component": "attrs",
+      "role": "project-implementation"
+    },
+    {
+      "component": "cattrs",
+      "role": "serialization-adapter"
+    },
+    {
+      "component": "design-patterns",
+      "role": "advisory-vocabulary"
+    },
+    {
+      "component": "refactorings",
+      "role": "advisory-recipe"
+    }
+  ],
+  "projection": {
+    "authority": "schema-projection",
+    "canonicalContractFormat": "json-schema-draft-2020-12",
+    "projectionTarget": "pydantic-v2",
+    "generator": {
+      "id": "datamodel-code-generator",
+      "tool": "datamodel-code-generator",
+      "version": "0.71.0",
+      "distributionRef": {
+        "id": "datamodel-code-generator-wheel",
+        "digest": "sha256:680b68338d59e98a0559eeb54d8e5ca33c35b3ec0bef922ec2cc783f2cb28e9a",
+        "uri": "https://files.pythonhosted.org/packages/c6/4d/556cb290170f41b97ce50fd872e10a266f141d7a38352bb3071e4ae61f41/datamodel_code_generator-0.71.0-py3-none-any.whl",
+        "mediaType": "application/zip"
+      },
+      "configurationRef": {
+        "id": "datamodel-codegen-config",
+        "digest": "sha256:5642fe274350cfa4efc22d61997323795dcd839004b6712b7ef04b2f130e9e84",
+        "uri": "pyproject.toml",
+        "mediaType": "application/toml"
+      },
+      "configuration": {
+        "inputFileType": "jsonschema",
+        "outputModelType": "pydantic_v2.BaseModel",
+        "targetPythonVersion": "3.14",
+        "useStandardCollections": true,
+        "useUnionOperator": true,
+        "useAnnotated": true,
+        "formatters": [
+          "ruff-check",
+          "ruff-format"
+        ]
+      },
+      "inputSchemaRef": {
+        "id": "python-policy-ppf-schema",
+        "digest": "sha256:06055b436bb224a4fc76eef96821d7e467eeb1c047b78807945c22e06d7d4eaf",
+        "uri": "references/python-policy-ppf.schema.json",
+        "mediaType": "application/schema+json"
+      },
+      "outputPath": "src/ppf/generated/models.py"
+    },
+    "coverage": [
+      "catalog-documents",
+      "plan-documents",
+      "run-documents",
+      "report-documents",
+      "discriminated-item-unions",
+      "fixtures",
+      "probes",
+      "observations",
+      "counterexamples",
+      "waivers",
+      "enums",
+      "structural-field-constraints"
+    ],
+    "handwrittenResponsibilities": [
+      "cross-reference-validation",
+      "uniqueness-validation",
+      "authority-rules",
+      "applicability-rules",
+      "evidence-admission",
+      "verdict-aggregation",
+      "probe-adapters",
+      "execution-orchestration",
+      "time-sensitive-waiver-validation"
+    ],
+    "artifactPolicy": {
+      "immutableBuildProduct": true,
+      "generatedFileHeaderRequired": true,
+      "handEditing": "forbidden",
+      "generatorVersionPinned": true,
+      "configurationPinned": true,
+      "ciRegenerationDirectory": "temporary",
+      "driftResponse": "fail",
+      "reviewSurface": "schema-changes"
+    },
+    "facade": {
+      "required": true,
+      "applicationDependsOnGeneratedClassNames": false,
+      "strictBoundaryValidation": true,
+      "semanticValidationAfterProjection": true
+    },
+    "canonicalValidationRetained": true,
+    "divergenceDomains": [
+      "regex-semantics",
+      "format-semantics",
+      "coercion",
+      "defaults",
+      "union-selection",
+      "additional-properties"
+    ],
+    "qualification": {
+      "validators": [
+        "json-schema",
+        "generated-pydantic"
+      ],
+      "validFixtureAgreementRequired": true,
+      "invalidFixtureAgreementRequired": true,
+      "disagreementResult": "generator-projection-qualification-failure",
+      "schemaGeneratedValues": true,
+      "generatorFramework": "hypothesis",
+      "persistMinimizedDisagreements": true,
+      "regressionFixturePromotion": true,
+      "ciSequence": [
+        "regenerate-and-check-clean",
+        "ruff-generated-code",
+        "ty-generated-code",
+        "json-schema-pydantic-differential-tests",
+        "semantic-validation-tests",
+        "complete-ppf-harness-tests"
+      ]
+    }
+  },
+  "runtime": {
+    "publicDocumentModel": "generated-pydantic",
+    "internalRuntimeModel": "attrs",
+    "adapterStructuringTool": "cattrs",
+    "behaviorInterface": "typing.Protocol",
+    "duplicateAttrsPublicModelsForbidden": true,
+    "duplicatePpfSerializationPathsForbidden": true,
+    "attrsCandidates": [
+      "execution-context",
+      "admitted-evidence"
+    ],
+    "attrsCapabilities": [
+      "frozen",
+      "slots",
+      "converters",
+      "validators",
+      "evolve"
+    ],
+    "cattrsActivation": "only-when-non-pydantic-adapter-needs-it",
+    "cattrsAllowedPayloadKinds": [
+      "ansible-result",
+      "ruff-normalized-diagnostic",
+      "ty-normalized-diagnostic",
+      "subprocess-message",
+      "remote-executor-message",
+      "cached-runtime-state"
+    ],
+    "cattrsForbiddenArtifactKinds": [
+      "catalog-documents",
+      "plan-documents",
+      "run-documents",
+      "report-documents"
+    ],
+    "flow": [
+      "json-input",
+      "generated-pydantic-document",
+      "semantic-validation",
+      "attrs-runtime-objects",
+      "evaluation",
+      "generated-pydantic-report",
+      "json-output"
+    ]
+  },
+  "patterns": {
+    "authority": "advisory-vocabulary",
+    "patternAbsenceIsFailure": false,
+    "fitAssessmentRequiredForAdoption": true,
+    "initialVocabulary": [
+      "strategy",
+      "adapter",
+      "facade",
+      "decorator"
+    ],
+    "applications": [
+      {
+        "pattern": "strategy",
+        "applications": [
+          "probe-implementations",
+          "oracle-implementations",
+          "generator-implementations",
+          "admission-policy-implementations"
+        ],
+        "obligation": {
+          "level": "preferred",
+          "conditionRef": null
+        },
+        "activationEvidenceRefs": [],
+        "limitations": []
+      },
+      {
+        "pattern": "adapter",
+        "applications": [
+          "ruff-integration",
+          "ty-integration",
+          "pytest-integration",
+          "hypothesis-integration",
+          "ansible-integration",
+          "crosshair-integration",
+          "import-linter-integration"
+        ],
+        "obligation": {
+          "level": "preferred",
+          "conditionRef": null
+        },
+        "activationEvidenceRefs": [],
+        "limitations": []
+      },
+      {
+        "pattern": "facade",
+        "applications": [
+          "public-ppf-engine-api"
+        ],
+        "obligation": {
+          "level": "preferred",
+          "conditionRef": null
+        },
+        "activationEvidenceRefs": [],
+        "limitations": []
+      },
+      {
+        "pattern": "decorator",
+        "applications": [
+          "timeout-wrappers",
+          "instrumentation-wrappers",
+          "sandbox-wrappers",
+          "evidence-capture-wrappers"
+        ],
+        "obligation": {
+          "level": "preferred",
+          "conditionRef": null
+        },
+        "activationEvidenceRefs": [],
+        "limitations": []
+      }
+    ],
+    "fitCriteria": [
+      "context-predicate-satisfied",
+      "required-forces-present",
+      "liabilities-acceptable",
+      "participant-responsibilities-observed"
+    ],
+    "fitAssessments": [],
+    "admissionPipeline": [
+      "normalize",
+      "verify-provenance",
+      "check-applicability",
+      "check-reliability",
+      "resolve-conflicts",
+      "aggregate",
+      "produce-verdict"
+    ],
+    "genericChainOfResponsibilityForAdmission": "discouraged"
+  },
+  "refactoring": {
+    "authority": "advisory-recipe",
+    "recipeNameCreatesObligation": false,
+    "recommendedRecipes": [
+      "extract-function",
+      "introduce-parameter-object",
+      "move-function",
+      "replace-conditional-with-polymorphism",
+      "separate-query-from-modifier"
+    ],
+    "transformations": []
+  },
+  "metadata": {
+    "sourceSummary": "Generated Pydantic projection, attrs runtime, cattrs adapters, advisory patterns, and qualified refactorings."
+  }
+}

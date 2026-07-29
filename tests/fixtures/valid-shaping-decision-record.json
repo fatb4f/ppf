@@ -1,0 +1,62 @@
+{
+  "documentType": "shaping-decision-record",
+  "schemaVersion": "0.2.0",
+  "decisionId": "project-rollout-shaping",
+  "subjectRef": {
+    "id": "project-rollout",
+    "digest": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+    "uri": "https://example.invalid/project-rollout.py",
+    "mediaType": "text/x-python"
+  },
+  "policyRef": {
+    "id": "default-operation-shaping",
+    "digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+    "uri": "https://example.invalid/default-operation-shaping.json",
+    "mediaType": "application/json"
+  },
+  "registryRef": {
+    "id": "default-semantic-shapes",
+    "digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "uri": "https://example.invalid/default-semantic-shapes.json",
+    "mediaType": "application/json"
+  },
+  "bindingRef": {
+    "id": "python-3.14-default-shaping",
+    "digest": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+    "uri": "https://example.invalid/python-3.14-default-shaping.json",
+    "mediaType": "application/json"
+  },
+  "admittedFacts": [
+    {
+      "factTypeRef": "coordinates-application-use-case",
+      "value": true
+    },
+    {
+      "factTypeRef": "requires-lifecycle-state",
+      "value": true
+    },
+    {
+      "factTypeRef": "requires-external-capability",
+      "value": true
+    }
+  ],
+  "predicateOutcomes": {
+    "coordinates-use-case": true,
+    "has-lifecycle-state": true,
+    "has-external-capability": true
+  },
+  "primaryProfileRef": "use-case-orchestrator",
+  "requiredProfileRefs": [
+    "state-transition",
+    "effect-port"
+  ],
+  "resolvedProfileRefs": [
+    "use-case-orchestrator",
+    "state-transition",
+    "effect-port"
+  ],
+  "facetRefs": [
+    "stateful-lifecycle",
+    "external-read-effect"
+  ]
+}

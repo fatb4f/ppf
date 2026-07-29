@@ -1,0 +1,126 @@
+{
+  "documentType": "shaping-policy",
+  "schemaVersion": "0.2.0",
+  "policyId": "default-operation-shaping",
+  "registryRef": {
+    "id": "default-semantic-shapes",
+    "digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "uri": "https://example.invalid/default-semantic-shapes.json",
+    "mediaType": "application/json"
+  },
+  "entryNodeRef": "decide-primary",
+  "factTypes": [
+    {
+      "id": "coordinates-application-use-case",
+      "valueType": "boolean",
+      "description": "The subject coordinates multiple operations to deliver an application-visible goal."
+    },
+    {
+      "id": "requires-lifecycle-state",
+      "valueType": "boolean",
+      "description": "The subject participates in a lifecycle whose invariants depend on prior events."
+    },
+    {
+      "id": "requires-external-capability",
+      "valueType": "boolean",
+      "description": "The subject requires filesystem, process, network, clock, or comparable external behavior."
+    }
+  ],
+  "predicates": [
+    {
+      "id": "coordinates-use-case",
+      "inputFactRef": "coordinates-application-use-case",
+      "operator": "equals",
+      "expectedValue": true
+    },
+    {
+      "id": "has-lifecycle-state",
+      "inputFactRef": "requires-lifecycle-state",
+      "operator": "equals",
+      "expectedValue": true
+    },
+    {
+      "id": "has-external-capability",
+      "inputFactRef": "requires-external-capability",
+      "operator": "equals",
+      "expectedValue": true
+    }
+  ],
+  "nodes": [
+    {
+      "id": "decide-primary",
+      "kind": "decision",
+      "predicateRef": "coordinates-use-case",
+      "trueTargetRef": "add-orchestrator",
+      "falseTargetRef": "add-pure-operation"
+    },
+    {
+      "id": "add-orchestrator",
+      "kind": "profile-contribution",
+      "profileRef": "use-case-orchestrator",
+      "selectionRole": "primary",
+      "facetRefs": [],
+      "nextTargetRef": "decide-lifecycle"
+    },
+    {
+      "id": "add-pure-operation",
+      "kind": "profile-contribution",
+      "profileRef": "pure-operation",
+      "selectionRole": "primary",
+      "facetRefs": [],
+      "nextTargetRef": "decide-lifecycle"
+    },
+    {
+      "id": "decide-lifecycle",
+      "kind": "decision",
+      "predicateRef": "has-lifecycle-state",
+      "trueTargetRef": "add-state-transition",
+      "falseTargetRef": "decide-effect"
+    },
+    {
+      "id": "add-state-transition",
+      "kind": "profile-contribution",
+      "profileRef": "state-transition",
+      "selectionRole": "collaborator",
+      "facetRefs": [
+        "stateful-lifecycle"
+      ],
+      "nextTargetRef": "decide-effect"
+    },
+    {
+      "id": "decide-effect",
+      "kind": "decision",
+      "predicateRef": "has-external-capability",
+      "trueTargetRef": "add-effect-port",
+      "falseTargetRef": "complete"
+    },
+    {
+      "id": "add-effect-port",
+      "kind": "profile-contribution",
+      "profileRef": "effect-port",
+      "selectionRole": "collaborator",
+      "facetRefs": [
+        "external-read-effect"
+      ],
+      "nextTargetRef": "complete"
+    },
+    {
+      "id": "complete",
+      "kind": "terminal",
+      "minimumPrimaryProfiles": 1,
+      "maximumPrimaryProfiles": 1
+    }
+  ],
+  "qualification": {
+    "predicateInputsDeclared": true,
+    "decisionsTotal": true,
+    "terminalPrimaryRequired": true,
+    "multiplePrimaryProfiles": "reject",
+    "transitiveProfileClosureRequired": true,
+    "profileAndFacetConflictsRejected": true,
+    "unreachableNodesRejected": true,
+    "cycles": "reject",
+    "digestBindingsRequired": true,
+    "differentialConformanceRequired": true
+  }
+}

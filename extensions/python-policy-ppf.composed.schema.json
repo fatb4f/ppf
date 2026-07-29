@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:python-policy-ppf:composed:extensions:0.2.0",
+  "title": "Python Policy PPF Composed Sidecar Extensions",
+  "description": "Non-authoritative composition schema accepting an unchanged official PPF document or either external sidecar extension document.",
+  "$comment": "This composition does not redefine or patch the official schema. Validators must register the official and extension schemas by their canonical $id values.",
+  "oneOf": [
+    {
+      "$ref": "urn:python-policy-ppf:generation-policy:0.2.0"
+    },
+    {
+      "$ref": "urn:python-policy-ppf:implementation-policy-extension:0.2.0"
+    },
+    {
+      "$ref": "urn:python-policy-ppf:extension:evaluation-workflow:0.2.0"
+    }
+  ],
+  "discriminator": {
+    "propertyName": "documentType",
+    "mapping": {
+      "counterexample": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/CounterexampleDocument",
+      "evaluation-input-manifest": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/EvaluationInputManifestDocument",
+      "evaluation-plan": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/EvaluationPlanDocument",
+      "evaluation-run": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/EvaluationRunDocument",
+      "evaluation-run-fragment": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/EvaluationRunFragmentDocument",
+      "generation-policy-profile": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/GenerationPolicyProfileDocument",
+      "qualification-report": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/QualificationReportDocument",
+      "regression-fixture": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/RegressionFixtureDocument",
+      "stage-registry": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/StageRegistryDocument",
+      "toolchain-lock": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/ToolchainLockDocument",
+      "implementation-policy-extension": "urn:python-policy-ppf:implementation-policy-extension:0.2.0#/$defs/ImplementationPolicyExtensionDocument",
+      "shaping-policy": "urn:python-policy-ppf:implementation-policy-extension:0.2.0#/$defs/ShapingPolicyDocument",
+      "shaping-profile-registry": "urn:python-policy-ppf:implementation-policy-extension:0.2.0#/$defs/ProfileRegistryDocument",
+      "shaping-implementation-binding": "urn:python-policy-ppf:implementation-policy-extension:0.2.0#/$defs/ImplementationBindingDocument",
+      "shaping-decision-record": "urn:python-policy-ppf:implementation-policy-extension:0.2.0#/$defs/ShapingDecisionRecord",
+      "capability-provider-registry": "urn:python-policy-ppf:implementation-policy-extension:0.2.0#/$defs/CapabilityProviderRegistryDocument",
+      "dependency-wiring-plan": "urn:python-policy-ppf:implementation-policy-extension:0.2.0#/$defs/DependencyWiringPlanDocument",
+      "capability-assembly-record": "urn:python-policy-ppf:implementation-policy-extension:0.2.0#/$defs/CapabilityAssemblyRecord",
+      "qualification-fixture-projection": "urn:python-policy-ppf:implementation-policy-extension:0.2.0#/$defs/QualificationFixtureProjectionDocument",
+      "evaluation-evidence-catalog": "urn:python-policy-ppf:extension:evaluation-workflow:0.2.0#/$defs/EvaluationEvidenceCatalogDocument",
+      "evaluation-input-binding": "urn:python-policy-ppf:extension:evaluation-workflow:0.2.0#/$defs/EvaluationInputBindingDocument",
+      "evaluation-producer-envelope": "urn:python-policy-ppf:extension:evaluation-workflow:0.2.0#/$defs/EvaluationProducerEnvelopeDocument",
+      "evaluation-run-assembly": "urn:python-policy-ppf:extension:evaluation-workflow:0.2.0#/$defs/EvaluationRunAssemblyDocument",
+      "evaluation-workflow": "urn:python-policy-ppf:extension:evaluation-workflow:0.2.0#/$defs/EvaluationWorkflowDocument",
+      "evidence-admission-derivation": "urn:python-policy-ppf:extension:evaluation-workflow:0.2.0#/$defs/EvidenceAdmissionDerivationDocument",
+      "qualification-integrity": "urn:python-policy-ppf:extension:evaluation-workflow:0.2.0#/$defs/QualificationIntegrityDocument"
+    }
+  }
+}

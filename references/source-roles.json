@@ -1,0 +1,50 @@
+{
+  "schema": "python-policy-source-roles.v0",
+  "sources": [
+    {
+      "id": "trail-of-bits-modern-python",
+      "authority": "advisory-reference",
+      "role": "project-toolchain-generation"
+    },
+    {
+      "id": "modern-python-guidance",
+      "authority": "advisory-reference",
+      "role": "version-projected-code-generation"
+    },
+    {
+      "id": "proven-python",
+      "authority": "advisory-reference",
+      "role": "generation-acceptance-contract"
+    },
+    {
+      "id": "google-styleguides-skills",
+      "authority": "advisory-reference",
+      "role": "style-convention-layer"
+    },
+    {
+      "id": "python-best-practices",
+      "authority": "advisory-reference",
+      "role": "opinionated-defaults"
+    },
+    {
+      "id": "wshobson-agents-python-skills",
+      "authority": "advisory-reference",
+      "role": "task-specialist-procedures"
+    },
+    {
+      "id": "python-enhancement-proposals",
+      "authority": "versioned-rationale",
+      "role": "language-standard-source"
+    },
+    {
+      "id": "refactoring-guru-patterns",
+      "authority": "advisory-reference",
+      "role": "design-pattern-taxonomy"
+    },
+    {
+      "id": "refactoring-guru-refactorings",
+      "authority": "advisory-reference",
+      "role": "refactoring-taxonomy"
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "documentType": "qualification-report",
+  "schemaVersion": "0.2.0",
+  "reportId": "report-1",
+  "runRef": {
+    "id": "run-1",
+    "digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333"
+  },
+  "profileRef": {
+    "id": "python-3.14-default",
+    "digest": "sha256:26df9b077b7b5a46fdd421e3187a81005f9ca28c788a4df80b509d3a386d2753"
+  },
+  "generatedAt": "2026-07-29T05:00:00Z",
+  "admissions": [
+    {
+      "id": "evidence-1",
+      "claimRef": "PY-GEN-001",
+      "observationRef": "observation-1",
+      "catalogRuleRef": "default-admission",
+      "assignedReliability": "R3",
+      "admitted": true,
+      "oracleResultRef": null,
+      "rejectionReason": null
+    }
+  ],
+  "summary": {
+    "passed": 0,
+    "failed": 1,
+    "inconclusive": 0,
+    "notApplicable": 0,
+    "waived": 0
+  },
+  "itemVerdicts": [
+    {
+      "id": "verdict-1",
+      "itemRef": "PY-GEN-001",
+      "subjectRef": "subject-1",
+      "verdict": "fail",
+      "underlyingVerdict": "fail",
+      "admittedEvidenceRefs": [
+        "evidence-1"
+      ],
+      "rejectedEvidenceRefs": [],
+      "missingEvidence": [],
+      "rationale": "The admitted observation refutes the claim.",
+      "waiver": null
+    }
+  ],
+  "selectedOptionalProfiles": []
+}

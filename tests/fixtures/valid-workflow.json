@@ -1,0 +1,110 @@
+{
+  "baseline": null,
+  "currentState": "qualified",
+  "documentType": "evaluation-workflow",
+  "implementationIterations": [],
+  "inputBindingRef": {
+    "digest": "sha256:782c997392a2ce4c740a825a224aa385bcb099470548316f776479c227350fc0",
+    "id": "binding-1"
+  },
+  "mode": "qualification-only",
+  "qualificationIteration": {
+    "completedAt": "2026-07-28T20:01:00Z",
+    "inputClosureDigest": "sha256:347ea17520682c515e1990306ad4831d5ad8a4d2a3001e5bf8d41350bc91d2be",
+    "inputs": {
+      "adapterSet": {
+        "digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "id": "adapters",
+        "uri": "https://example.invalid/adapters"
+      },
+      "catalog": {
+        "digest": "sha256:704af846e5f69b54186d1a038e6930c4883e852fa9ea8ad5d61e54cb41fa9a19",
+        "id": "catalog-1"
+      },
+      "environment": {
+        "digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+        "id": "environment",
+        "uri": "https://example.invalid/environment"
+      },
+      "inputManifest": {
+        "digest": "sha256:0930e5d4bb5417cab9b7c6e4b458e78662d3900693e4a7b4f4494a4493baf9f2",
+        "id": "manifest"
+      },
+      "invocationSet": {
+        "digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "id": "invocations",
+        "uri": "https://example.invalid/invocations"
+      },
+      "plan": {
+        "digest": "sha256:ef7b44accc2424b315c95c0a225702524555f4bb21884500e8090bdbb0a8e06d",
+        "id": "plan"
+      },
+      "profile": {
+        "digest": "sha256:26df9b077b7b5a46fdd421e3187a81005f9ca28c788a4df80b509d3a386d2753",
+        "id": "python-3.14-default"
+      },
+      "sandboxProfile": {
+        "digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "id": "sandbox",
+        "uri": "https://example.invalid/sandbox"
+      },
+      "stageRegistry": {
+        "digest": "sha256:63a4372e40abce0f4bac891242bc05afaef91c023da6c504fdea370ebebd77ac",
+        "id": "stages"
+      },
+      "toolchain": {
+        "digest": "sha256:2e23a4efa256b328f4dd109c99f263e536fc09ad68a56cf0d5493541fee35a7b",
+        "id": "toolchain"
+      },
+      "worktree": {
+        "digest": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+        "id": "worktree",
+        "uri": "https://example.invalid/worktree"
+      }
+    },
+    "iterationId": "qualification-1",
+    "judgment": {
+      "rationale": "All required claims passed.",
+      "verdict": "pass"
+    },
+    "kind": "qualification",
+    "rawArtifactRefs": [
+      {
+        "digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "id": "raw-ty",
+        "uri": "https://example.invalid/raw-ty"
+      }
+    ],
+    "runAssemblyRef": {
+      "digest": "sha256:5741b2180b4cca66732174258a0003906b4fdd7b76fe8c0498f8ab79efbb4ce2",
+      "id": "assembly-1"
+    },
+    "startedAt": "2026-07-28T20:00:00Z",
+    "status": "completed"
+  },
+  "schemaVersion" : "0.2.0",
+  "transitions": [
+    {
+      "at": "2026-07-28T19:59:00Z",
+      "cause": "inputs-locked",
+      "from": "planned",
+      "to": "inputs-bound",
+      "transitionId": "transition-1"
+    },
+    {
+      "at": "2026-07-28T20:00:00Z",
+      "cause": "qualification-only-started",
+      "from": "inputs-bound",
+      "to": "full-qualification-running",
+      "transitionId": "transition-2"
+    },
+    {
+      "at": "2026-07-28T20:01:00Z",
+      "cause": "qualification-passed",
+      "from": "full-qualification-running",
+      "to": "qualified",
+      "transitionId": "transition-3"
+    }
+  ],
+  "workflowId": "workflow-1"
+}

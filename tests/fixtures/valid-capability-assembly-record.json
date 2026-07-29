@@ -1,0 +1,62 @@
+{
+  "documentType": "capability-assembly-record",
+  "schemaVersion": "0.2.0",
+  "recordId": "rollout-request-assembly",
+  "implementationBindingRef": {
+    "id": "python-3.14-default-shaping",
+    "digest": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+    "uri": "https://example.invalid/python-3.14-default-shaping.json",
+    "mediaType": "application/json"
+  },
+  "providerRegistryRef": {
+    "id": "rollout-capabilities",
+    "digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    "uri": "https://example.invalid/rollout-capabilities.json",
+    "mediaType": "application/json"
+  },
+  "wiringPlanRef": {
+    "id": "rollout-capability-wiring",
+    "digest": "sha256:777788889999aaaabbbbccccddddeeeeffff0000111122223333444455556666",
+    "uri": "https://example.invalid/rollout-capability-wiring.json",
+    "mediaType": "application/json"
+  },
+  "resolverCompilerRef": {
+    "id": "modern-di-resolver-compiler",
+    "digest": "sha256:88889999aaaabbbbccccddddeeeeffff00001111222233334444555566667777",
+    "uri": "https://example.invalid/modern-di/resolver.py",
+    "mediaType": "text/x-python"
+  },
+  "compiledResolverGraphRef": {
+    "id": "rollout-compiled-resolvers",
+    "digest": "sha256:9999aaaabbbbccccddddeeeeffff000011112222333344445555666677778888",
+    "uri": "https://example.invalid/rollout-compiled-resolvers.bin",
+    "mediaType": "application/octet-stream"
+  },
+  "rootProviderRefs": [
+    "user-service"
+  ],
+  "activeScopePath": [
+    "app",
+    "request"
+  ],
+  "contextOverlays": [
+    {
+      "scopeRef": "request",
+      "values": {
+        "request-id": "request-123"
+      }
+    }
+  ],
+  "appliedOverrides": [],
+  "managedCapabilityEvents": [],
+  "validationFindings": [
+    {
+      "eventKind": "alias-terminal",
+      "subjectRef": "repository",
+      "severity": "information",
+      "message": "Alias resolves transparently to git-repository."
+    }
+  ],
+  "effectiveGraphDigest": "sha256:aaaabbbbccccddddeeeeffff0000111122223333444455556666777788889999",
+  "finalizationOrder": "lifo"
+}

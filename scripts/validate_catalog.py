@@ -1,0 +1,916 @@
+#!/usr/bin/env python3
+"""Validate Python Policy PPF documents without third-party dependencies."""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import math
+import re
+import sys
+from collections import Counter
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+from urllib.parse import urlsplit
+
+Json = Any
+PathParts = tuple[str | int, ...]
+
+AUTHORITY_CLASSES = {
+    "canonical-specification",
+    "versioned-rationale",
+    "project-policy",
+    "advisory-reference",
+    "diagnostic-documentation",
+}
+DOCUMENT_IDS = {
+    "counterexample": "counterexampleId",
+    "evaluation-input-manifest": "manifestId",
+    "evaluation-plan": "planId",
+    "evaluation-run": "runId",
+    "evaluation-run-fragment": "fragmentId",
+    "generation-policy-profile": "profileId",
+    "qualification-report": "reportId",
+    "regression-fixture": ("fixture", "id"),
+    "stage-registry": "registryId",
+    "toolchain-lock": "lockId",
+}
+RFC3339 = re.compile(
+    r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}"
+    r"(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$"
+)
+VALID_HEX_ESCAPE = re.compile(r"%(?:[0-9A-Fa-f]{2})")
+
+
+class ValidationError:
+    def __init__(self, path: PathParts, message: str, kind: str) -> None:
+        self.path = path
+        self.message = message
+        self.kind = kind
+
+    def as_dict(self) -> dict[str, str]:
+        return {
+            "kind": self.kind,
+            "path": _format_path(self.path),
+            "message": self.message,
+        }
+
+
+def _format_path(path: PathParts) -> str:
+    if not path:
+        return "/"
+    escaped = (str(part).replace("~", "~0").replace("/", "~1") for part in path)
+    return "/" + "/".join(escaped)
+
+
+def _canonical(value: Json) -> str:
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+
+
+def _same(left: Json, right: Json) -> bool:
+    return type(left) is type(right) and _canonical(left) == _canonical(right)
+
+
+def _resolve_ref(root: dict[str, Json], reference: str) -> dict[str, Json]:
+    if not reference.startswith("#/"):
+        raise ValueError(f"only local references are supported: {reference!r}")
+    node: Json = root
+    for raw_part in reference[2:].split("/"):
+        part = raw_part.replace("~1", "/").replace("~0", "~")
+        node = node[part]
+    if not isinstance(node, dict):
+        raise ValueError(f"reference does not resolve to a schema object: {reference!r}")
+    return node
+
+
+def _matches_type(value: Json, expected: str) -> bool:
+    match expected:
+        case "null":
+            return value is None
+        case "boolean":
+            return isinstance(value, bool)
+        case "integer":
+            return isinstance(value, int) and not isinstance(value, bool)
+        case "number":
+            return (
+                isinstance(value, (int, float))
+                and not isinstance(value, bool)
+                and not (isinstance(value, float) and not math.isfinite(value))
+            )
+        case "string":
+            return isinstance(value, str)
+        case "array":
+            return isinstance(value, list)
+        case "object":
+            return isinstance(value, dict)
+        case _:
+            raise ValueError(f"unsupported JSON Schema type: {expected!r}")
+
+
+def _valid_datetime(value: str) -> bool:
+    if not RFC3339.fullmatch(value):
+        return False
+    try:
+        datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    return True
+
+
+def _valid_uri_reference(value: str) -> bool:
+    if any(character.isspace() or ord(character) < 32 for character in value):
+        return False
+    escapes_removed = VALID_HEX_ESCAPE.sub("", value)
+    if "%" in escapes_removed:
+        return False
+    try:
+        urlsplit(value)
+    except ValueError:
+        return False
+    return True
+
+
+def _validate_format(value: str, name: str) -> bool:
+    if name == "date-time":
+        return _valid_datetime(value)
+    if name == "uri-reference":
+        return _valid_uri_reference(value)
+    raise ValueError(f"unsupported format: {name!r}")
+
+
+def validate_structure(
+    value: Json,
+    schema: dict[str, Json],
+    root: dict[str, Json],
+    path: PathParts = (),
+) -> list[ValidationError]:
+    errors: list[ValidationError] = []
+
+    reference = schema.get("$ref")
+    if isinstance(reference, str):
+        try:
+            errors.extend(validate_structure(value, _resolve_ref(root, reference), root, path))
+        except (KeyError, TypeError, ValueError) as error:
+            errors.append(ValidationError(path, str(error), "schema"))
+        return errors
+
+    branches = schema.get("allOf")
+    if isinstance(branches, list):
+        for branch in branches:
+            errors.extend(validate_structure(value, branch, root, path))
+
+    condition = schema.get("if")
+    if isinstance(condition, dict):
+        condition_errors = validate_structure(value, condition, root, path)
+        selected = schema.get("then") if not condition_errors else schema.get("else")
+        if isinstance(selected, dict):
+            errors.extend(validate_structure(value, selected, root, path))
+
+    branches = schema.get("anyOf")
+    if isinstance(branches, list):
+        branch_errors = [
+            validate_structure(value, branch, root, path) for branch in branches
+        ]
+        if not any(not branch_error for branch_error in branch_errors):
+            errors.extend(min(branch_errors, key=len))
+        return errors
+
+    branches = schema.get("oneOf")
+    if isinstance(branches, list):
+        branch_errors = [
+            validate_structure(value, branch, root, path) for branch in branches
+        ]
+        matches = sum(not branch_error for branch_error in branch_errors)
+        if matches == 0:
+            errors.extend(min(branch_errors, key=len))
+        elif matches > 1:
+            errors.append(
+                ValidationError(
+                    path,
+                    f"must match exactly one allowed schema; matched {matches}",
+                    "structural",
+                )
+            )
+        return errors
+
+    expected_type = schema.get("type")
+    if isinstance(expected_type, str) and not _matches_type(value, expected_type):
+        return [
+            ValidationError(
+                path,
+                f"expected {expected_type}, got {type(value).__name__}",
+                "structural",
+            )
+        ]
+
+    if "const" in schema and not _same(value, schema["const"]):
+        errors.append(
+            ValidationError(path, f"must equal {schema['const']!r}", "structural")
+        )
+    if "enum" in schema and not any(_same(value, item) for item in schema["enum"]):
+        errors.append(
+            ValidationError(path, f"must be one of {schema['enum']!r}", "structural")
+        )
+
+    if isinstance(value, str):
+        minimum = schema.get("minLength")
+        if isinstance(minimum, int) and len(value) < minimum:
+            errors.append(
+                ValidationError(path, f"must contain at least {minimum} characters", "structural")
+            )
+        pattern = schema.get("pattern")
+        if isinstance(pattern, str) and re.search(pattern, value) is None:
+            errors.append(
+                ValidationError(path, f"must match pattern {pattern!r}", "structural")
+            )
+        format_name = schema.get("format")
+        if isinstance(format_name, str) and not _validate_format(value, format_name):
+            errors.append(
+                ValidationError(path, f"must be a valid {format_name}", "structural")
+            )
+
+    if (
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and (not isinstance(value, float) or math.isfinite(value))
+    ):
+        minimum = schema.get("minimum")
+        if isinstance(minimum, (int, float)) and value < minimum:
+            errors.append(ValidationError(path, f"must be >= {minimum}", "structural"))
+        exclusive_minimum = schema.get("exclusiveMinimum")
+        if isinstance(exclusive_minimum, (int, float)) and value <= exclusive_minimum:
+            errors.append(
+                ValidationError(path, f"must be > {exclusive_minimum}", "structural")
+            )
+
+    if isinstance(value, list):
+        minimum = schema.get("minItems")
+        if isinstance(minimum, int) and len(value) < minimum:
+            errors.append(
+                ValidationError(path, f"must contain at least {minimum} items", "structural")
+            )
+        if schema.get("uniqueItems") is True:
+            canonical = [_canonical(item) for item in value]
+            if len(canonical) != len(set(canonical)):
+                errors.append(ValidationError(path, "items must be unique", "structural"))
+        item_schema = schema.get("items")
+        if isinstance(item_schema, dict):
+            for index, item in enumerate(value):
+                errors.extend(validate_structure(item, item_schema, root, (*path, index)))
+
+    if isinstance(value, dict):
+        properties = schema.get("properties", {})
+        required = schema.get("required", [])
+        if isinstance(required, list):
+            for name in required:
+                if name not in value:
+                    errors.append(
+                        ValidationError((*path, name), "required property is missing", "structural")
+                    )
+
+        patterns = schema.get("patternProperties", {})
+        for name, item in value.items():
+            matched = False
+            if isinstance(properties, dict) and name in properties:
+                matched = True
+                errors.extend(
+                    validate_structure(item, properties[name], root, (*path, name))
+                )
+            if isinstance(patterns, dict):
+                for pattern, item_schema in patterns.items():
+                    if re.search(pattern, name):
+                        matched = True
+                        errors.extend(
+                            validate_structure(item, item_schema, root, (*path, name))
+                        )
+            if not matched:
+                additional = schema.get("additionalProperties", True)
+                if additional is False:
+                    errors.append(
+                        ValidationError(
+                            (*path, name),
+                            "additional property is not allowed",
+                            "structural",
+                        )
+                    )
+                elif isinstance(additional, dict):
+                    errors.extend(
+                        validate_structure(item, additional, root, (*path, name))
+                    )
+
+    return errors
+
+
+def _semantic(path: PathParts, message: str) -> ValidationError:
+    return ValidationError(path, message, "semantic")
+
+
+def _unique_ids(
+    values: list[Json],
+    path: PathParts,
+    field: str = "id",
+) -> tuple[dict[str, dict[str, Json]], list[ValidationError]]:
+    index: dict[str, dict[str, Json]] = {}
+    errors: list[ValidationError] = []
+    for offset, value in enumerate(values):
+        if not isinstance(value, dict) or not isinstance(value.get(field), str):
+            continue
+        identifier = value[field]
+        if identifier in index:
+            errors.append(_semantic((*path, offset, field), f"duplicate id {identifier!r}"))
+        else:
+            index[identifier] = value
+    return index, errors
+
+
+def _nonzero_digests(value: Json, path: PathParts = ()) -> list[ValidationError]:
+    errors: list[ValidationError] = []
+    if isinstance(value, dict):
+        for name, item in value.items():
+            child_path = (*path, name)
+            if (
+                name.lower().endswith("digest")
+                and isinstance(item, str)
+                and item.startswith("sha256:")
+                and set(item.removeprefix("sha256:")) == {"0"}
+            ):
+                errors.append(_semantic(child_path, "placeholder all-zero digest is forbidden"))
+            errors.extend(_nonzero_digests(item, child_path))
+    elif isinstance(value, list):
+        for index, item in enumerate(value):
+            errors.extend(_nonzero_digests(item, (*path, index)))
+    return errors
+
+
+def _parse_datetime(value: Json) -> datetime | None:
+    if not isinstance(value, str) or not _valid_datetime(value):
+        return None
+    return datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+
+def _profile_semantics(document: dict[str, Json]) -> list[ValidationError]:
+    errors: list[ValidationError] = []
+    authorities, duplicate_errors = _unique_ids(
+        document.get("authoritySources", []), ("authoritySources",)
+    )
+    errors.extend(duplicate_errors)
+    claims, duplicate_errors = _unique_ids(document.get("claims", []), ("claims",))
+    errors.extend(duplicate_errors)
+    gates, duplicate_errors = _unique_ids(document.get("gates", []), ("gates",))
+    errors.extend(duplicate_errors)
+
+    precedence = document.get("authorityPrecedence", [])
+    if set(precedence) != AUTHORITY_CLASSES or len(precedence) != len(AUTHORITY_CLASSES):
+        errors.append(
+            _semantic(
+                ("authorityPrecedence",),
+                "must contain every authority class exactly once",
+            )
+        )
+
+    authority_classes = {
+        identifier: source.get("authorityClass")
+        for identifier, source in authorities.items()
+    }
+    for index, claim in enumerate(document.get("claims", [])):
+        claim_id = claim.get("id")
+        refs = claim.get("authorityRefs", [])
+        for ref_index, reference in enumerate(refs):
+            if reference not in authorities:
+                errors.append(
+                    _semantic(
+                        ("claims", index, "authorityRefs", ref_index),
+                        f"unknown authority source {reference!r}",
+                    )
+                )
+        if not any(
+            authority_classes.get(reference)
+            in {"canonical-specification", "project-policy"}
+            for reference in refs
+        ):
+            errors.append(
+                _semantic(
+                    ("claims", index, "authorityRefs"),
+                    "a policy claim requires canonical or project-policy authority",
+                )
+            )
+        obligation = claim.get("obligation", {})
+        if (
+            obligation.get("level") == "conditional"
+            and obligation.get("conditionRef") is None
+        ):
+            errors.append(
+                _semantic(
+                    ("claims", index, "obligation", "conditionRef"),
+                    "conditional policy requires a conditionRef",
+                )
+            )
+        for assessment_index, assessment in enumerate(claim.get("assessedBy", [])):
+            gate_ref = assessment.get("gateRef")
+            if gate_ref not in gates:
+                errors.append(
+                    _semantic(
+                        ("claims", index, "assessedBy", assessment_index, "gateRef"),
+                        f"unknown gate {gate_ref!r}",
+                    )
+                )
+            elif claim_id not in gates[gate_ref].get("assessedClaimRefs", []):
+                errors.append(
+                    _semantic(
+                        ("claims", index, "assessedBy", assessment_index, "gateRef"),
+                        "gate does not declare this claim in assessedClaimRefs",
+                    )
+                )
+
+    for index, gate in enumerate(document.get("gates", [])):
+        if not gate.get("command"):
+            errors.append(_semantic(("gates", index, "command"), "command must not be empty"))
+        assessed_refs = gate.get("assessedClaimRefs", [])
+        if not assessed_refs:
+            errors.append(
+                _semantic(
+                    ("gates", index, "assessedClaimRefs"),
+                    "gate must assess at least one claim",
+                )
+            )
+        for ref_index, reference in enumerate(assessed_refs):
+            if reference not in claims:
+                errors.append(
+                    _semantic(
+                        ("gates", index, "assessedClaimRefs", ref_index),
+                        f"unknown claim {reference!r}",
+                    )
+                )
+    return errors
+
+
+def _plan_semantics(document: dict[str, Json]) -> list[ValidationError]:
+    cases = document.get("cases", [])
+    _, errors = _unique_ids(cases, ("cases",))
+    for index, case in enumerate(cases):
+        claim_ref = case.get("claimRef")
+        fixture_claims = case.get("fixture", {}).get("claimRefs", [])
+        if claim_ref not in fixture_claims:
+            errors.append(
+                _semantic(
+                    ("cases", index, "fixture", "claimRefs"),
+                    "fixture must reference the evaluation case claim",
+                )
+            )
+        if not case.get("oracleRefs"):
+            errors.append(
+                _semantic(("cases", index, "oracleRefs"), "at least one oracle is required")
+            )
+    return errors
+
+
+def _run_semantics(document: dict[str, Json]) -> list[ValidationError]:
+    errors: list[ValidationError] = []
+    executions, duplicate_errors = _unique_ids(
+        document.get("executions", []), ("executions",)
+    )
+    errors.extend(duplicate_errors)
+    observations, duplicate_errors = _unique_ids(
+        document.get("observations", []), ("observations",)
+    )
+    errors.extend(duplicate_errors)
+    oracle_results, duplicate_errors = _unique_ids(
+        document.get("oracleResults", []), ("oracleResults",)
+    )
+    errors.extend(duplicate_errors)
+    fragments, duplicate_errors = _unique_ids(
+        document.get("fragments", []), ("fragments",), "fragmentId"
+    )
+    errors.extend(duplicate_errors)
+
+    started = _parse_datetime(document.get("startedAt"))
+    completed = _parse_datetime(document.get("completedAt"))
+    if started is not None and completed is not None and completed < started:
+        errors.append(
+            _semantic(("completedAt",), "completedAt must not precede startedAt")
+        )
+
+    for index, observation in enumerate(document.get("observations", [])):
+        if observation.get("executionRef") not in executions:
+            errors.append(
+                _semantic(
+                    ("observations", index, "executionRef"),
+                    f"unknown execution {observation.get('executionRef')!r}",
+                )
+            )
+        if observation.get("status") == "skipped" and not observation.get("skipReason"):
+            errors.append(
+                _semantic(
+                    ("observations", index, "skipReason"),
+                    "skipped observation requires a skipReason",
+                )
+            )
+
+    for index, result in enumerate(document.get("oracleResults", [])):
+        for ref_index, reference in enumerate(result.get("observationRefs", [])):
+            if reference not in observations:
+                errors.append(
+                    _semantic(
+                        ("oracleResults", index, "observationRefs", ref_index),
+                        f"unknown observation {reference!r}",
+                    )
+                )
+
+    for index, fragment in enumerate(document.get("fragments", [])):
+        for name, known in (
+            ("executionRefs", executions),
+            ("observationRefs", observations),
+            ("oracleResultRefs", oracle_results),
+        ):
+            for ref_index, reference in enumerate(fragment.get(name, [])):
+                if reference not in known:
+                    errors.append(
+                        _semantic(
+                            ("fragments", index, name, ref_index),
+                            f"unknown {name.removesuffix('Refs')} {reference!r}",
+                        )
+                    )
+    return errors
+
+
+def _report_semantics(document: dict[str, Json]) -> list[ValidationError]:
+    errors: list[ValidationError] = []
+    admissions, duplicate_errors = _unique_ids(
+        document.get("admissions", []), ("admissions",)
+    )
+    errors.extend(duplicate_errors)
+    verdicts, duplicate_errors = _unique_ids(
+        document.get("itemVerdicts", []), ("itemVerdicts",)
+    )
+    errors.extend(duplicate_errors)
+
+    for index, admission in enumerate(document.get("admissions", [])):
+        admitted = admission.get("admitted")
+        rejection_reason = admission.get("rejectionReason")
+        if admitted and rejection_reason is not None:
+            errors.append(
+                _semantic(
+                    ("admissions", index, "rejectionReason"),
+                    "admitted evidence cannot have a rejectionReason",
+                )
+            )
+        if admitted and admission.get("assignedReliability") == "R0":
+            errors.append(
+                _semantic(
+                    ("admissions", index, "assignedReliability"),
+                    "R0 evidence cannot be admitted",
+                )
+            )
+        if not admitted and not rejection_reason:
+            errors.append(
+                _semantic(
+                    ("admissions", index, "rejectionReason"),
+                    "rejected evidence requires a rejectionReason",
+                )
+            )
+
+    counts = Counter()
+    report_time = _parse_datetime(document.get("generatedAt"))
+    for index, item in enumerate(document.get("itemVerdicts", [])):
+        verdict = item.get("verdict")
+        underlying = item.get("underlyingVerdict")
+        waiver = item.get("waiver")
+        counts[verdict] += 1
+        admitted_refs = set(item.get("admittedEvidenceRefs", []))
+        rejected_refs = set(item.get("rejectedEvidenceRefs", []))
+        overlap = admitted_refs & rejected_refs
+        if overlap:
+            errors.append(
+                _semantic(
+                    ("itemVerdicts", index),
+                    f"evidence cannot be both admitted and rejected: {sorted(overlap)!r}",
+                )
+            )
+        for name, references in (
+            ("admittedEvidenceRefs", admitted_refs),
+            ("rejectedEvidenceRefs", rejected_refs),
+        ):
+            for reference in references:
+                if reference not in admissions:
+                    errors.append(
+                        _semantic(
+                            ("itemVerdicts", index, name),
+                            f"unknown evidence admission {reference!r}",
+                        )
+                    )
+        if verdict == "waived":
+            if underlying != "fail":
+                errors.append(
+                    _semantic(
+                        ("itemVerdicts", index, "underlyingVerdict"),
+                        "waived verdict requires underlyingVerdict 'fail'",
+                    )
+                )
+            if not isinstance(waiver, dict):
+                errors.append(
+                    _semantic(
+                        ("itemVerdicts", index, "waiver"),
+                        "waived verdict requires a waiver",
+                    )
+                )
+            else:
+                if item.get("itemRef") not in waiver.get("scope", []):
+                    errors.append(
+                        _semantic(
+                            ("itemVerdicts", index, "waiver", "scope"),
+                            "waiver scope must include the itemRef",
+                        )
+                    )
+                expiry = _parse_datetime(waiver.get("expiresAt"))
+                if (
+                    report_time is not None
+                    and expiry is not None
+                    and expiry <= report_time
+                ):
+                    errors.append(
+                        _semantic(
+                            ("itemVerdicts", index, "waiver", "expiresAt"),
+                            "waiver must be active when the report is generated",
+                        )
+                    )
+        elif underlying != verdict:
+            errors.append(
+                _semantic(
+                    ("itemVerdicts", index, "underlyingVerdict"),
+                    "underlyingVerdict must equal a non-waived verdict",
+                )
+            )
+        if verdict == "pass" and item.get("missingEvidence"):
+            errors.append(
+                _semantic(
+                    ("itemVerdicts", index, "missingEvidence"),
+                    "pass cannot contain missing evidence",
+                )
+            )
+
+    expected = {
+        "passed": counts["pass"],
+        "failed": counts["fail"],
+        "inconclusive": counts["inconclusive"],
+        "notApplicable": counts["not-applicable"],
+        "waived": counts["waived"],
+    }
+    if document.get("summary") != expected:
+        errors.append(
+            _semantic(("summary",), f"summary must equal computed counts {expected!r}")
+        )
+    return errors
+
+
+def _stage_semantics(document: dict[str, Json]) -> list[ValidationError]:
+    stages, errors = _unique_ids(document.get("stages", []), ("stages",))
+    for index, stage in enumerate(document.get("stages", [])):
+        for dependency_index, dependency in enumerate(stage.get("dependsOn", [])):
+            if dependency not in stages:
+                errors.append(
+                    _semantic(
+                        ("stages", index, "dependsOn", dependency_index),
+                        f"unknown stage {dependency!r}",
+                    )
+                )
+
+    visiting: set[str] = set()
+    visited: set[str] = set()
+
+    def visit(identifier: str) -> None:
+        if identifier in visiting:
+            errors.append(_semantic(("stages",), f"stage dependency cycle at {identifier!r}"))
+            return
+        if identifier in visited or identifier not in stages:
+            return
+        visiting.add(identifier)
+        for dependency in stages[identifier].get("dependsOn", []):
+            visit(dependency)
+        visiting.remove(identifier)
+        visited.add(identifier)
+
+    for identifier in stages:
+        visit(identifier)
+    for name, members in document.get("groups", {}).items():
+        for index, member in enumerate(members):
+            if member not in stages:
+                errors.append(
+                    _semantic(
+                        ("groups", name, index), f"unknown stage {member!r}"
+                    )
+                )
+    return errors
+
+
+def _toolchain_semantics(document: dict[str, Json]) -> list[ValidationError]:
+    values = [document.get("python"), *document.get("tools", [])]
+    _, errors = _unique_ids(
+        [item for item in values if isinstance(item, dict)], ("tools",)
+    )
+    return errors
+
+
+def validate_semantics(document: dict[str, Json]) -> list[ValidationError]:
+    errors = _nonzero_digests(document)
+    document_type = document.get("documentType")
+    if document_type == "generation-policy-profile":
+        errors.extend(_profile_semantics(document))
+    elif document_type == "evaluation-plan":
+        errors.extend(_plan_semantics(document))
+    elif document_type == "evaluation-run":
+        errors.extend(_run_semantics(document))
+    elif document_type == "qualification-report":
+        errors.extend(_report_semantics(document))
+    elif document_type == "stage-registry":
+        errors.extend(_stage_semantics(document))
+    elif document_type == "toolchain-lock":
+        errors.extend(_toolchain_semantics(document))
+    elif document_type == "counterexample" and not document.get("replayInvocation"):
+        errors.append(
+            _semantic(("replayInvocation",), "counterexample must be replayable")
+        )
+    elif document_type == "regression-fixture":
+        if not document.get("fixture", {}).get("claimRefs"):
+            errors.append(
+                _semantic(
+                    ("fixture", "claimRefs"),
+                    "regression fixture must reference at least one claim",
+                )
+            )
+    return errors
+
+
+def _document_id(document: dict[str, Json]) -> str | None:
+    selector = DOCUMENT_IDS.get(document.get("documentType"))
+    if isinstance(selector, str):
+        value = document.get(selector)
+        return value if isinstance(value, str) else None
+    if isinstance(selector, tuple):
+        value: Json = document
+        for part in selector:
+            if not isinstance(value, dict):
+                return None
+            value = value.get(part)
+        return value if isinstance(value, str) else None
+    return None
+
+
+def _content_refs(value: Json, path: PathParts = ()) -> list[tuple[PathParts, dict[str, Json]]]:
+    refs: list[tuple[PathParts, dict[str, Json]]] = []
+    if isinstance(value, dict):
+        if (
+            isinstance(value.get("id"), str)
+            and isinstance(value.get("digest"), str)
+            and set(value).issubset(
+                {"id", "digest", "uri", "mediaType", "selected"}
+            )
+        ):
+            refs.append((path, value))
+        for name, item in value.items():
+            refs.extend(_content_refs(item, (*path, name)))
+    elif isinstance(value, list):
+        for index, item in enumerate(value):
+            refs.extend(_content_refs(item, (*path, index)))
+    return refs
+
+
+def validate_bundle(
+    loaded: list[tuple[Path, bytes, dict[str, Json]]],
+) -> dict[Path, list[ValidationError]]:
+    errors = {path: [] for path, _, _ in loaded}
+    index: dict[str, tuple[Path, str, dict[str, Json]]] = {}
+    for path, raw, document in loaded:
+        identifier = _document_id(document)
+        if identifier is None:
+            continue
+        digest = "sha256:" + hashlib.sha256(raw).hexdigest()
+        if identifier in index:
+            errors[path].append(_semantic((), f"duplicate document id {identifier!r}"))
+        else:
+            index[identifier] = (path, digest, document)
+
+    for path, _, document in loaded:
+        for ref_path, reference in _content_refs(document):
+            target = index.get(reference["id"])
+            if target is not None and reference["digest"] != target[1]:
+                errors[path].append(
+                    _semantic(
+                        (*ref_path, "digest"),
+                        f"digest does not match supplied document {reference['id']!r}",
+                    )
+                )
+
+        if document.get("documentType") == "evaluation-plan":
+            profile_target = index.get(document.get("profileRef", {}).get("id"))
+            if profile_target is not None:
+                claims = {
+                    claim.get("id") for claim in profile_target[2].get("claims", [])
+                }
+                for case_index, case in enumerate(document.get("cases", [])):
+                    if case.get("claimRef") not in claims:
+                        errors[path].append(
+                            _semantic(
+                                ("cases", case_index, "claimRef"),
+                                "claim is absent from profile "
+                                f"{profile_target[2].get('profileId')!r}",
+                            )
+                        )
+
+            toolchain_target = index.get(document.get("toolchainRef", {}).get("id"))
+            if profile_target is not None and toolchain_target is not None:
+                tools = {
+                    tool.get("id")
+                    for tool in [
+                        toolchain_target[2].get("python"),
+                        *toolchain_target[2].get("tools", []),
+                    ]
+                    if isinstance(tool, dict)
+                }
+                for gate_index, gate in enumerate(profile_target[2].get("gates", [])):
+                    if gate.get("toolRef") not in tools:
+                        errors[profile_target[0]].append(
+                            _semantic(
+                                ("gates", gate_index, "toolRef"),
+                                "tool is absent from toolchain "
+                                f"{toolchain_target[2].get('lockId')!r}",
+                            )
+                        )
+    return errors
+
+
+def _expand_inputs(paths: list[Path]) -> list[Path]:
+    expanded: list[Path] = []
+    for path in paths:
+        if path.is_dir():
+            expanded.extend(sorted(path.rglob("*.json")))
+        else:
+            expanded.append(path)
+    return expanded
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(
+        description="Validate structural and semantic Python Policy PPF contracts."
+    )
+    parser.add_argument("documents", nargs="+", type=Path)
+    parser.add_argument(
+        "--schema",
+        type=Path,
+        default=Path(__file__).resolve().parents[1]
+        / "references"
+        / "python-policy-ppf.schema.json",
+    )
+    args = parser.parse_args()
+
+    try:
+        schema = json.loads(args.schema.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        print(json.dumps({"valid": False, "schema": str(args.schema), "error": str(error)}))
+        return 2
+
+    loaded: list[tuple[Path, bytes, dict[str, Json]]] = []
+    results: dict[Path, list[ValidationError]] = {}
+    for path in _expand_inputs(args.documents):
+        try:
+            raw = path.read_bytes()
+            document = json.loads(raw)
+            if not isinstance(document, dict):
+                raise ValueError("top-level document must be an object")
+        except (OSError, json.JSONDecodeError, ValueError) as error:
+            results[path] = [ValidationError((), str(error), "input")]
+            continue
+        loaded.append((path, raw, document))
+        results[path] = validate_structure(document, schema, schema)
+        if not results[path]:
+            results[path].extend(validate_semantics(document))
+
+    bundle_errors = validate_bundle(loaded)
+    for path, path_errors in bundle_errors.items():
+        results.setdefault(path, []).extend(path_errors)
+
+    payload = {
+        "valid": all(not errors for errors in results.values()),
+        "schema": str(args.schema),
+        "documents": [
+            {
+                "document": str(path),
+                "valid": not errors,
+                "errors": [
+                    error.as_dict()
+                    for error in sorted(
+                        errors,
+                        key=lambda item: (item.kind, item.path, item.message),
+                    )
+                ],
+            }
+            for path, errors in results.items()
+        ],
+    }
+    print(json.dumps(payload, indent=None if payload["valid"] else 2))
+    return 0 if payload["valid"] else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -1,0 +1,103 @@
+{
+  "documentType": "dependency-wiring-plan",
+  "schemaVersion": "0.2.0",
+  "planId": "rollout-capability-wiring",
+  "providerRegistryRef": {
+    "id": "rollout-capabilities",
+    "digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    "uri": "https://example.invalid/rollout-capabilities.json",
+    "mediaType": "application/json"
+  },
+  "compilerRef": {
+    "id": "modern-di-wiring-compiler",
+    "digest": "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "uri": "https://example.invalid/modern-di/compiler.py",
+    "mediaType": "text/x-python"
+  },
+  "annotationPolicyRef": "python-3.14-default",
+  "providerPlans": [
+    {
+      "providerRef": "git-repository",
+      "creatorSignatureDigest": "sha256:111122223333444455556666777788889999aaaabbbbccccddddeeeeffff0000",
+      "scopeRef": "app",
+      "providerDependencies": [],
+      "staticArguments": [],
+      "contextDependencies": [],
+      "unwireableParameters": [],
+      "terminalProviderRef": "git-repository",
+      "resolverIdentity": "resolve-git-repository"
+    },
+    {
+      "providerRef": "repository",
+      "creatorSignatureDigest": "sha256:22223333444455556666777788889999aaaabbbbccccddddeeeeffff00001111",
+      "scopeRef": "app",
+      "providerDependencies": [],
+      "staticArguments": [],
+      "contextDependencies": [],
+      "unwireableParameters": [],
+      "terminalProviderRef": "git-repository",
+      "resolverIdentity": "resolve-repository-alias"
+    },
+    {
+      "providerRef": "request-context",
+      "creatorSignatureDigest": "sha256:3333444455556666777788889999aaaabbbbccccddddeeeeffff000011112222",
+      "scopeRef": "request",
+      "providerDependencies": [],
+      "staticArguments": [],
+      "contextDependencies": [
+        {
+          "parameter": "request-id",
+          "contextRef": "request-id",
+          "required": true,
+          "absenceSemantics": "reject"
+        }
+      ],
+      "unwireableParameters": [],
+      "terminalProviderRef": "request-context",
+      "resolverIdentity": "resolve-request-context"
+    },
+    {
+      "providerRef": "user-service",
+      "creatorSignatureDigest": "sha256:444455556666777788889999aaaabbbbccccddddeeeeffff0000111122223333",
+      "scopeRef": "request",
+      "providerDependencies": [
+        {
+          "parameter": "repository",
+          "requestedCapabilityRef": "repository-port",
+          "providerRef": "repository",
+          "terminalProviderRef": "git-repository",
+          "cardinality": "one",
+          "selectionPolicy": "direct"
+        }
+      ],
+      "staticArguments": [],
+      "contextDependencies": [
+        {
+          "parameter": "request-id",
+          "contextRef": "request-id",
+          "required": true,
+          "absenceSemantics": "reject"
+        }
+      ],
+      "unwireableParameters": [],
+      "terminalProviderRef": "user-service",
+      "resolverIdentity": "resolve-user-service"
+    }
+  ],
+  "graphDigest": "sha256:55556666777788889999aaaabbbbccccddddeeeeffff00001111222233334444",
+  "graphValidation": {
+    "traversalEventKinds": [
+      "node-entered",
+      "edge",
+      "cycle",
+      "dependencies-error",
+      "scope-inversion",
+      "alias-terminal"
+    ],
+    "judgmentMode": "policy-fold",
+    "cycles": "reject",
+    "unwireableParameters": "reject",
+    "scopeInversions": "reject"
+  },
+  "immutable": true
+}

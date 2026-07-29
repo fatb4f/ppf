@@ -1,0 +1,114 @@
+{
+  "documentType": "evaluation-producer-envelope",
+  "envelopeId": "envelope-1",
+  "executions": [
+    {
+      "invocationRef": {
+        "digest": "sha256:1212121212121212121212121212121212121212121212121212121212121212",
+        "id": "invocation-1",
+        "uri": "https://example.invalid/invocation-1"
+      },
+      "rawArtifactRefs": [
+        {
+          "digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "id": "raw-ty",
+          "uri": "https://example.invalid/raw-ty"
+        }
+      ],
+      "record": {
+        "adapterRef": {
+          "digest": "sha256:1313131313131313131313131313131313131313131313131313131313131313",
+          "id": "adapter",
+          "uri": "https://example.invalid/adapter"
+        },
+        "caseRefs": [
+          "case-1"
+        ],
+        "id": "exec-1",
+        "inputManifestDigest": "sha256:0930e5d4bb5417cab9b7c6e4b458e78662d3900693e4a7b4f4494a4493baf9f2",
+        "invocation": {
+          "argv": [
+            "uv",
+            "run",
+            "ty",
+            "check"
+          ],
+          "workingDirectoryRef": "worktree"
+        },
+        "limitations": [],
+        "normalizerRef": {
+          "digest": "sha256:1414141414141414141414141414141414141414141414141414141414141414",
+          "id": "normalizer",
+          "uri": "https://example.invalid/normalizer"
+        },
+        "rawArtifactRefs": [
+          {
+            "digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+            "id": "raw-ty",
+            "uri": "https://example.invalid/raw-ty"
+          }
+        ],
+        "result": {
+          "durationMs": 10,
+          "exitCode": 0,
+          "signal": null,
+          "status": "completed"
+        },
+        "stageRef": "typing"
+      }
+    }
+  ],
+  "fragment": {
+    "artifactRefs": [
+      {
+        "digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "id": "raw-ty",
+        "uri": "https://example.invalid/raw-ty"
+      }
+    ],
+    "documentType": "evaluation-run-fragment",
+    "executionRefs": [
+      "exec-1"
+    ],
+    "fragmentId": "fragment-1",
+    "inputManifestDigest": "sha256:0930e5d4bb5417cab9b7c6e4b458e78662d3900693e4a7b4f4494a4493baf9f2",
+    "observationRefs": [
+      "obs-1"
+    ],
+    "oracleResultRefs": [],
+    "schemaVersion": "0.2.0",
+    "stageRef": "typing"
+  },
+  "inputBindingDigest": "sha256:782c997392a2ce4c740a825a224aa385bcb099470548316f776479c227350fc0",
+  "inputBindingRef": {
+    "digest": "sha256:782c997392a2ce4c740a825a224aa385bcb099470548316f776479c227350fc0",
+    "id": "binding-1"
+  },
+  "limitations": [],
+  "observations": [
+    {
+      "applicabilityPredicateRef": null,
+      "caseRef": "case-1",
+      "counterexampleRef": null,
+      "executionRef": "exec-1",
+      "fixtureRef": "fixture-1",
+      "id": "obs-1",
+      "itemRef": "PY-GEN-001",
+      "location": null,
+      "normalizedCode": "TY-PASS",
+      "payload": null,
+      "probeRef": "ty-probe",
+      "skipReason": null,
+      "source": "ty",
+      "status": "passed",
+      "subjectRef": "subject-1"
+    }
+  ],
+  "oracleResults": [],
+  "producerRef": {
+    "digest": "sha256:1515151515151515151515151515151515151515151515151515151515151515",
+    "id": "ty-adapter",
+    "uri": "https://example.invalid/ty-adapter"
+  },
+  "schemaVersion" : "0.2.0"
+}

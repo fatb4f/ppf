@@ -1,0 +1,1581 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:python-policy-ppf:extension:schema-conformance:0.2.0",
+  "title": "Python Policy PPF Schema Conformance and Fixture Qualification Extension",
+  "description": "Additive sidecar documents for canonical JSON Schema validator profiles, generated Pydantic projection admission, independently authored and generated conformance cases, mutation-derived invalid candidates, optional pydantic-fixturegen runs, reproducibility gates, directional disagreement classification, and presentation-only evidence adapters. The official Python Policy PPF schema and existing sidecar schemas remain unchanged.",
+  "$comment": "Register the official schema under urn:python-policy-ppf:generation-policy:0.2.0 and the implementation-policy extension under urn:python-policy-ppf:implementation-policy-extension:0.2.0. This extension is bound to the official schema sha256:06055b436bb224a4fc76eef96821d7e467eeb1c047b78807945c22e06d7d4eaf and the supplied implementation extension sha256:4043df349234df472d294f318313c319d884fdd00e9e3faf31bcb8bb5e64213f.",
+  "$defs": {
+    "OfficialContentRef": {
+      "title": "Official Content Ref",
+      "$ref": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/ContentRef"
+    },
+    "OfficialJsonValue": {
+      "title": "Official JSON Value",
+      "$ref": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/JsonValue"
+    },
+    "BaseContractBinding": {
+      "type": "object",
+      "title": "Base Contract Binding",
+      "additionalProperties": false,
+      "properties": {
+        "schemaId": {
+          "type": "string",
+          "const": "urn:python-policy-ppf:generation-policy:0.2.0"
+        },
+        "schemaVersion": {
+          "type": "string",
+          "const": "0.2.0"
+        },
+        "digest": {
+          "type": "string",
+          "const": "sha256:06055b436bb224a4fc76eef96821d7e467eeb1c047b78807945c22e06d7d4eaf"
+        }
+      },
+      "required": [
+        "schemaId",
+        "schemaVersion",
+        "digest"
+      ]
+    },
+    "ImplementationExtensionBinding": {
+      "type": "object",
+      "title": "Implementation Extension Binding",
+      "additionalProperties": false,
+      "properties": {
+        "schemaId": {
+          "type": "string",
+          "const": "urn:python-policy-ppf:implementation-policy-extension:0.2.0"
+        },
+        "schemaVersion": {
+          "type": "string",
+          "const": "0.2.0"
+        },
+        "digest": {
+          "type": "string",
+          "const": "sha256:4043df349234df472d294f318313c319d884fdd00e9e3faf31bcb8bb5e64213f"
+        }
+      },
+      "required": [
+        "schemaId",
+        "schemaVersion",
+        "digest"
+      ]
+    },
+    "ToolArtifactLock": {
+      "type": "object",
+      "title": "Tool Artifact Lock",
+      "additionalProperties": false,
+      "properties": {
+        "tool": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:[A-Za-z0-9._+-]*)$"
+        },
+        "distributionRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "configurationRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        }
+      },
+      "required": [
+        "tool",
+        "version",
+        "distributionRef",
+        "configurationRef"
+      ]
+    },
+    "VocabularyDisposition": {
+      "type": "string",
+      "title": "Vocabulary Disposition",
+      "enum": [
+        "required",
+        "enabled",
+        "disabled"
+      ]
+    },
+    "VocabularySelection": {
+      "type": "object",
+      "title": "Vocabulary Selection",
+      "additionalProperties": false,
+      "properties": {
+        "uri": {
+          "type": "string",
+          "format": "uri"
+        },
+        "disposition": {
+          "$ref": "#/$defs/VocabularyDisposition"
+        }
+      },
+      "required": [
+        "uri",
+        "disposition"
+      ]
+    },
+    "FormatBehavior": {
+      "type": "string",
+      "title": "Format Behavior",
+      "enum": [
+        "assert",
+        "annotate",
+        "ignore"
+      ]
+    },
+    "UnknownFormatBehavior": {
+      "type": "string",
+      "title": "Unknown Format Behavior",
+      "enum": [
+        "reject-schema",
+        "annotate",
+        "ignore"
+      ]
+    },
+    "ReferenceResolutionPolicy": {
+      "type": "object",
+      "title": "Reference Resolution Policy",
+      "additionalProperties": false,
+      "properties": {
+        "networkAccess": {
+          "type": "boolean",
+          "const": false,
+          "default": false
+        },
+        "unknownResource": {
+          "type": "string",
+          "const": "fail",
+          "default": "fail"
+        },
+        "registryRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "registryDigest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "networkAccess",
+        "unknownResource",
+        "registryRef",
+        "registryDigest"
+      ]
+    },
+    "CanonicalValidatorProfile": {
+      "type": "object",
+      "title": "Canonical Validator Profile",
+      "additionalProperties": false,
+      "properties": {
+        "profileId": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$"
+        },
+        "validator": {
+          "$ref": "#/$defs/ToolArtifactLock"
+        },
+        "dialect": {
+          "type": "string",
+          "const": "https://json-schema.org/draft/2020-12/schema"
+        },
+        "vocabularies": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/VocabularySelection"
+          },
+          "minItems": 1
+        },
+        "formatBehavior": {
+          "$ref": "#/$defs/FormatBehavior"
+        },
+        "unknownFormatBehavior": {
+          "$ref": "#/$defs/UnknownFormatBehavior"
+        },
+        "referenceResolution": {
+          "$ref": "#/$defs/ReferenceResolutionPolicy"
+        },
+        "optionalVocabularyConfigurationRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        }
+      },
+      "required": [
+        "profileId",
+        "validator",
+        "dialect",
+        "vocabularies",
+        "formatBehavior",
+        "unknownFormatBehavior",
+        "referenceResolution",
+        "optionalVocabularyConfigurationRef"
+      ]
+    },
+    "FixtureClass": {
+      "type": "string",
+      "title": "Fixture Class",
+      "enum": [
+        "curated-valid",
+        "curated-invalid",
+        "curated-boundary",
+        "curated-adversarial",
+        "curated-regression",
+        "generated-nominal-candidate",
+        "property-generated-candidate",
+        "mutation-derived-invalid"
+      ]
+    },
+    "FixtureCorpusPolicy": {
+      "type": "object",
+      "title": "Fixture Corpus Policy",
+      "additionalProperties": false,
+      "properties": {
+        "independentlyAuthoredClasses": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "curated-valid"
+            },
+            {
+              "const": "curated-invalid"
+            },
+            {
+              "const": "curated-boundary"
+            },
+            {
+              "const": "curated-adversarial"
+            },
+            {
+              "const": "curated-regression"
+            }
+          ],
+          "items": false,
+          "minItems": 5,
+          "maxItems": 5
+        },
+        "generatedNominalSeparated": {
+          "type": "boolean",
+          "const": true,
+          "default": true
+        },
+        "invalidCasesRetained": {
+          "type": "boolean",
+          "const": true,
+          "default": true
+        },
+        "boundaryCasesRetained": {
+          "type": "boolean",
+          "const": true,
+          "default": true
+        },
+        "promotionRequiresExplicitReason": {
+          "type": "boolean",
+          "const": true,
+          "default": true
+        },
+        "corpusRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        }
+      },
+      "required": [
+        "independentlyAuthoredClasses",
+        "generatedNominalSeparated",
+        "invalidCasesRetained",
+        "boundaryCasesRetained",
+        "promotionRequiresExplicitReason",
+        "corpusRef"
+      ]
+    },
+    "PropertyGenerationPolicy": {
+      "type": "object",
+      "title": "Property Generation Policy",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "framework": {
+          "type": "string",
+          "const": "hypothesis",
+          "default": "hypothesis"
+        },
+        "tool": {
+          "$ref": "#/$defs/ToolArtifactLock"
+        },
+        "strategyAuthority": {
+          "type": "string",
+          "const": "canonical-schema-or-independent-strategy-catalog",
+          "default": "canonical-schema-or-independent-strategy-catalog"
+        },
+        "pydanticProjectionAsStrategySource": {
+          "type": "boolean",
+          "const": false,
+          "default": false
+        },
+        "strategyCatalogRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "persistMinimizedDisagreements": {
+          "type": "boolean",
+          "const": true,
+          "default": true
+        },
+        "promoteMinimizedRegressionFixtures": {
+          "type": "boolean",
+          "const": true,
+          "default": true
+        }
+      },
+      "required": [
+        "enabled",
+        "framework",
+        "tool",
+        "strategyAuthority",
+        "pydanticProjectionAsStrategySource",
+        "strategyCatalogRef",
+        "persistMinimizedDisagreements",
+        "promoteMinimizedRegressionFixtures"
+      ]
+    },
+    "MutationOperator": {
+      "type": "string",
+      "title": "Mutation Operator",
+      "enum": [
+        "remove-required-property",
+        "replace-scalar-type",
+        "replace-container-type",
+        "below-minimum",
+        "above-maximum",
+        "violate-multiple-of",
+        "below-min-length",
+        "above-max-length",
+        "violate-pattern",
+        "violate-format",
+        "duplicate-unique-item",
+        "below-min-items",
+        "above-max-items",
+        "add-forbidden-property",
+        "violate-dependent-required",
+        "satisfy-zero-oneof-branches",
+        "satisfy-multiple-oneof-branches",
+        "violate-not",
+        "trigger-if-and-violate-then",
+        "trigger-else-and-violate-else"
+      ]
+    },
+    "MutationGenerationPolicy": {
+      "type": "object",
+      "title": "Mutation Generation Policy",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "seedRequirement": {
+          "type": "string",
+          "const": "canonically-valid-instance",
+          "default": "canonically-valid-instance"
+        },
+        "operatorCatalogRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "operators": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/MutationOperator"
+          },
+          "uniqueItems": true,
+          "minItems": 1
+        },
+        "invalidAdmissionRule": {
+          "type": "string",
+          "const": "canonical-validator-rejects-candidate",
+          "default": "canonical-validator-rejects-candidate"
+        },
+        "provenanceRequired": {
+          "type": "boolean",
+          "const": true,
+          "default": true
+        }
+      },
+      "required": [
+        "enabled",
+        "seedRequirement",
+        "operatorCatalogRef",
+        "operators",
+        "invalidAdmissionRule",
+        "provenanceRequired"
+      ]
+    },
+    "FixtureGeneratorPolicy": {
+      "type": "object",
+      "title": "Fixture Generator Policy",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "tool": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/ToolArtifactLock"
+            },
+            {
+              "properties": {
+                "tool": {
+                  "const": "pydantic-fixturegen"
+                }
+              }
+            }
+          ]
+        },
+        "role": {
+          "type": "string",
+          "const": "optional-nominal-fixture-producer",
+          "default": "optional-nominal-fixture-producer"
+        },
+        "authority": {
+          "type": "string",
+          "const": "none",
+          "default": "none"
+        },
+        "requiredForProjectionAdmission": {
+          "type": "boolean",
+          "const": false,
+          "default": false
+        },
+        "requiredForPolicyQualification": {
+          "type": "boolean",
+          "const": false,
+          "default": false
+        },
+        "outputFormat": {
+          "type": "string",
+          "const": "json",
+          "default": "json"
+        },
+        "candidateClass": {
+          "type": "string",
+          "const": "generated-nominal-candidate",
+          "default": "generated-nominal-candidate"
+        },
+        "fixedSeedRequired": {
+          "type": "boolean",
+          "const": true,
+          "default": true
+        },
+        "providerConfigurationRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "sandboxSecurityAuthority": {
+          "type": "string",
+          "const": "none",
+          "default": "none"
+        },
+        "hostileSubmissionIsolation": {
+          "type": "string",
+          "const": "external-security-boundary",
+          "default": "external-security-boundary"
+        },
+        "admissionValidators": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "canonical-json-schema"
+            },
+            {
+              "const": "generated-pydantic"
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        }
+      },
+      "required": [
+        "enabled",
+        "tool",
+        "role",
+        "authority",
+        "requiredForProjectionAdmission",
+        "requiredForPolicyQualification",
+        "outputFormat",
+        "candidateClass",
+        "fixedSeedRequired",
+        "providerConfigurationRef",
+        "sandboxSecurityAuthority",
+        "hostileSubmissionIsolation",
+        "admissionValidators"
+      ]
+    },
+    "DisagreementClassification": {
+      "type": "string",
+      "title": "Disagreement Classification",
+      "enum": [
+        "unsupported-translation",
+        "known-semantic-divergence",
+        "defect"
+      ]
+    },
+    "ValidatorOutcome": {
+      "type": "string",
+      "title": "Validator Outcome",
+      "enum": [
+        "accept",
+        "reject",
+        "inconclusive"
+      ]
+    },
+    "DisagreementDirection": {
+      "type": "string",
+      "title": "Disagreement Direction",
+      "enum": [
+        "canonical-accept-projection-reject",
+        "canonical-reject-projection-accept",
+        "canonical-inconclusive",
+        "projection-inconclusive"
+      ]
+    },
+    "DifferentialDisagreement": {
+      "type": "object",
+      "title": "Differential Disagreement",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$"
+        },
+        "instanceRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "fixtureClass": {
+          "$ref": "#/$defs/FixtureClass"
+        },
+        "canonicalOutcome": {
+          "$ref": "#/$defs/ValidatorOutcome"
+        },
+        "projectionOutcome": {
+          "$ref": "#/$defs/ValidatorOutcome"
+        },
+        "direction": {
+          "$ref": "#/$defs/DisagreementDirection"
+        },
+        "classification": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DisagreementClassification"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "severity": {
+          "type": "string",
+          "enum": [
+            "critical",
+            "high",
+            "medium",
+            "low"
+          ]
+        },
+        "admissionImpact": {
+          "type": "string",
+          "enum": [
+            "fail",
+            "classify",
+            "none"
+          ]
+        },
+        "schemaLocation": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "instanceLocation": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "constraintClass": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "rationale": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "id",
+        "instanceRef",
+        "fixtureClass",
+        "canonicalOutcome",
+        "projectionOutcome",
+        "direction",
+        "classification",
+        "severity",
+        "admissionImpact",
+        "schemaLocation",
+        "instanceLocation",
+        "constraintClass",
+        "rationale"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "canonicalOutcome": {
+                "const": "reject"
+              },
+              "projectionOutcome": {
+                "const": "accept"
+              }
+            },
+            "required": [
+              "canonicalOutcome",
+              "projectionOutcome"
+            ]
+          },
+          "then": {
+            "properties": {
+              "direction": {
+                "const": "canonical-reject-projection-accept"
+              },
+              "severity": {
+                "const": "critical"
+              },
+              "admissionImpact": {
+                "const": "fail"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "canonicalOutcome": {
+                "const": "accept"
+              },
+              "projectionOutcome": {
+                "const": "reject"
+              }
+            },
+            "required": [
+              "canonicalOutcome",
+              "projectionOutcome"
+            ]
+          },
+          "then": {
+            "properties": {
+              "direction": {
+                "const": "canonical-accept-projection-reject"
+              },
+              "admissionImpact": {
+                "const": "classify"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "DifferentialAdmissionPolicy": {
+      "type": "object",
+      "title": "Differential Admission Policy",
+      "additionalProperties": false,
+      "properties": {
+        "canonicalAuthority": {
+          "type": "string",
+          "const": "canonical-json-schema",
+          "default": "canonical-json-schema"
+        },
+        "projection": {
+          "type": "string",
+          "const": "generated-pydantic",
+          "default": "generated-pydantic"
+        },
+        "semanticDifferentialConformanceRequired": {
+          "type": "boolean",
+          "const": true,
+          "default": true
+        },
+        "unsafeAcceptanceDisposition": {
+          "type": "string",
+          "const": "fail",
+          "default": "fail"
+        },
+        "overRejectionDisposition": {
+          "type": "string",
+          "const": "classify",
+          "default": "classify"
+        },
+        "allowedClassifications": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "unsupported-translation"
+            },
+            {
+              "const": "known-semantic-divergence"
+            },
+            {
+              "const": "defect"
+            }
+          ],
+          "items": false,
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "unclassifiedDisagreementLimit": {
+          "type": "integer",
+          "const": 0,
+          "default": 0
+        },
+        "unsafeAcceptanceLimit": {
+          "type": "integer",
+          "const": 0,
+          "default": 0
+        },
+        "errorComparison": {
+          "type": "string",
+          "const": "schema-location-instance-location-constraint-class",
+          "default": "schema-location-instance-location-constraint-class"
+        },
+        "errorMessageEqualityRequired": {
+          "type": "boolean",
+          "const": false,
+          "default": false
+        }
+      },
+      "required": [
+        "canonicalAuthority",
+        "projection",
+        "semanticDifferentialConformanceRequired",
+        "unsafeAcceptanceDisposition",
+        "overRejectionDisposition",
+        "allowedClassifications",
+        "unclassifiedDisagreementLimit",
+        "unsafeAcceptanceLimit",
+        "errorComparison",
+        "errorMessageEqualityRequired"
+      ]
+    },
+    "ReproducibilityPolicy": {
+      "type": "object",
+      "title": "Reproducibility Policy",
+      "additionalProperties": false,
+      "properties": {
+        "semanticCorrectnessAuthority": {
+          "type": "string",
+          "const": "differential-conformance",
+          "default": "differential-conformance"
+        },
+        "normalizedAstDeterminism": {
+          "type": "string",
+          "const": "required-for-pinned-toolchain",
+          "default": "required-for-pinned-toolchain"
+        },
+        "normalizedAstEstablishesSemanticCorrectness": {
+          "type": "boolean",
+          "const": false,
+          "default": false
+        },
+        "sourceByteDeterminism": {
+          "type": "string",
+          "enum": [
+            "required",
+            "preferred",
+            "not-required"
+          ],
+          "default": "preferred"
+        },
+        "generatedJsonCanonicalization": {
+          "type": "string",
+          "const": "RFC-8785",
+          "default": "RFC-8785"
+        },
+        "generatedJsonByteDeterminism": {
+          "type": "boolean",
+          "const": true,
+          "default": true
+        }
+      },
+      "required": [
+        "semanticCorrectnessAuthority",
+        "normalizedAstDeterminism",
+        "normalizedAstEstablishesSemanticCorrectness",
+        "sourceByteDeterminism",
+        "generatedJsonCanonicalization",
+        "generatedJsonByteDeterminism"
+      ]
+    },
+    "PresentationAdapterPolicy": {
+      "type": "object",
+      "title": "Presentation Adapter Policy",
+      "additionalProperties": false,
+      "properties": {
+        "adapter": {
+          "type": "string",
+          "enum": [
+            "marimo",
+            "cli",
+            "ci"
+          ]
+        },
+        "role": {
+          "type": "string",
+          "const": "presentation-adapter",
+          "default": "presentation-adapter"
+        },
+        "input": {
+          "type": "string",
+          "const": "canonical-evidence",
+          "default": "canonical-evidence"
+        },
+        "qualificationAuthority": {
+          "type": "boolean",
+          "const": false,
+          "default": false
+        },
+        "evidenceMutationAllowed": {
+          "type": "boolean",
+          "const": false,
+          "default": false
+        },
+        "rebuildableFromEvidence": {
+          "type": "boolean",
+          "const": true,
+          "default": true
+        }
+      },
+      "required": [
+        "adapter",
+        "role",
+        "input",
+        "qualificationAuthority",
+        "evidenceMutationAllowed",
+        "rebuildableFromEvidence"
+      ]
+    },
+    "SchemaConformancePolicyDocument": {
+      "type": "object",
+      "title": "Schema Conformance Policy Document",
+      "additionalProperties": false,
+      "properties": {
+        "documentType": {
+          "type": "string",
+          "const": "schema-conformance-policy",
+          "default": "schema-conformance-policy"
+        },
+        "schemaVersion": {
+          "type": "string",
+          "const": "0.2.0",
+          "default": "0.2.0"
+        },
+        "policyId": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$"
+        },
+        "baseContract": {
+          "$ref": "#/$defs/BaseContractBinding"
+        },
+        "implementationExtension": {
+          "$ref": "#/$defs/ImplementationExtensionBinding"
+        },
+        "profileRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "implementationPolicyRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "canonicalValidator": {
+          "$ref": "#/$defs/CanonicalValidatorProfile"
+        },
+        "fixtureCorpus": {
+          "$ref": "#/$defs/FixtureCorpusPolicy"
+        },
+        "propertyGeneration": {
+          "$ref": "#/$defs/PropertyGenerationPolicy"
+        },
+        "mutationGeneration": {
+          "$ref": "#/$defs/MutationGenerationPolicy"
+        },
+        "fixtureGenerator": {
+          "$ref": "#/$defs/FixtureGeneratorPolicy"
+        },
+        "projectionAdmission": {
+          "$ref": "#/$defs/DifferentialAdmissionPolicy"
+        },
+        "reproducibility": {
+          "$ref": "#/$defs/ReproducibilityPolicy"
+        },
+        "presentationAdapters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PresentationAdapterPolicy"
+          },
+          "minItems": 1,
+          "allOf": [
+            {
+              "contains": {
+                "properties": {
+                  "adapter": {
+                    "const": "marimo"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/OfficialJsonValue"
+          },
+          "default": {}
+        }
+      },
+      "required": [
+        "documentType",
+        "schemaVersion",
+        "policyId",
+        "baseContract",
+        "implementationExtension",
+        "profileRef",
+        "implementationPolicyRef",
+        "canonicalValidator",
+        "fixtureCorpus",
+        "propertyGeneration",
+        "mutationGeneration",
+        "fixtureGenerator",
+        "projectionAdmission",
+        "reproducibility",
+        "presentationAdapters"
+      ]
+    },
+    "ConformanceCounts": {
+      "type": "object",
+      "title": "Conformance Counts",
+      "additionalProperties": false,
+      "properties": {
+        "testedInstances": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "agreements": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "disagreements": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unsafeAcceptances": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "overRejections": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unclassifiedDisagreements": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "testedInstances",
+        "agreements",
+        "disagreements",
+        "unsafeAcceptances",
+        "overRejections",
+        "unclassifiedDisagreements"
+      ]
+    },
+    "CoverageRecord": {
+      "type": "object",
+      "title": "Coverage Record",
+      "additionalProperties": false,
+      "properties": {
+        "denominator": {
+          "type": "string",
+          "const": "generated-and-tested-instances-in-recorded-run"
+        },
+        "schemaCompletenessClaimed": {
+          "type": "boolean",
+          "const": false
+        },
+        "exercisedKeywords": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "unexercisedKeywords": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "exercisedBranches": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "unsupportedConstructs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "denominator",
+        "schemaCompletenessClaimed",
+        "exercisedKeywords",
+        "unexercisedKeywords",
+        "exercisedBranches",
+        "unsupportedConstructs"
+      ]
+    },
+    "ProjectionConformanceReportDocument": {
+      "type": "object",
+      "title": "Projection Conformance Report Document",
+      "additionalProperties": false,
+      "properties": {
+        "documentType": {
+          "type": "string",
+          "const": "projection-conformance-report"
+        },
+        "schemaVersion": {
+          "type": "string",
+          "const": "0.2.0"
+        },
+        "reportId": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$"
+        },
+        "policyRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "canonicalSchemaRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "canonicalValidatorProfileRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "generatedProjectionRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "curatedCorpusRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "propertyCaseSetRef": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OfficialContentRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "mutationCaseSetRef": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OfficialContentRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "counts": {
+          "$ref": "#/$defs/ConformanceCounts"
+        },
+        "coverage": {
+          "$ref": "#/$defs/CoverageRecord"
+        },
+        "disagreements": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DifferentialDisagreement"
+          },
+          "default": []
+        },
+        "semanticConformance": {
+          "type": "string",
+          "enum": [
+            "passed",
+            "failed",
+            "inconclusive"
+          ]
+        },
+        "projectionAdmission": {
+          "type": "string",
+          "enum": [
+            "eligible",
+            "rejected"
+          ]
+        },
+        "reproducibility": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "normalizedAst": {
+              "type": "string",
+              "enum": [
+                "match",
+                "mismatch",
+                "not-run"
+              ]
+            },
+            "sourceBytes": {
+              "type": "string",
+              "enum": [
+                "match",
+                "mismatch",
+                "not-run"
+              ]
+            }
+          },
+          "required": [
+            "normalizedAst",
+            "sourceBytes"
+          ]
+        },
+        "evidenceRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/OfficialContentRef"
+          },
+          "minItems": 1
+        },
+        "judgedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "reasons": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "default": []
+        }
+      },
+      "required": [
+        "documentType",
+        "schemaVersion",
+        "reportId",
+        "policyRef",
+        "canonicalSchemaRef",
+        "canonicalValidatorProfileRef",
+        "generatedProjectionRef",
+        "curatedCorpusRef",
+        "propertyCaseSetRef",
+        "mutationCaseSetRef",
+        "counts",
+        "coverage",
+        "disagreements",
+        "semanticConformance",
+        "projectionAdmission",
+        "reproducibility",
+        "evidenceRefs",
+        "judgedAt",
+        "reasons"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "projectionAdmission": {
+                "const": "eligible"
+              }
+            },
+            "required": [
+              "projectionAdmission"
+            ]
+          },
+          "then": {
+            "properties": {
+              "semanticConformance": {
+                "const": "passed"
+              },
+              "counts": {
+                "properties": {
+                  "unsafeAcceptances": {
+                    "const": 0
+                  },
+                  "unclassifiedDisagreements": {
+                    "const": 0
+                  }
+                }
+              },
+              "reasons": {
+                "maxItems": 0
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "reasons": {
+                "minItems": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "counts": {
+                "anyOf": [
+                  {
+                    "properties": {
+                      "unsafeAcceptances": {
+                        "minimum": 1
+                      }
+                    }
+                  },
+                  {
+                    "properties": {
+                      "unclassifiedDisagreements": {
+                        "minimum": 1
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "projectionAdmission": {
+                "const": "rejected"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "FixtureGeneratorRunConfiguration": {
+      "type": "object",
+      "title": "Fixture Generator Run Configuration",
+      "additionalProperties": false,
+      "properties": {
+        "seed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "requestedCount": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "outputFormat": {
+          "type": "string",
+          "const": "json"
+        },
+        "providerConfigurationRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        }
+      },
+      "required": [
+        "seed",
+        "requestedCount",
+        "outputFormat",
+        "providerConfigurationRef"
+      ]
+    },
+    "GeneratedFixtureRunDocument": {
+      "type": "object",
+      "title": "Generated Fixture Run Document",
+      "additionalProperties": false,
+      "properties": {
+        "documentType": {
+          "type": "string",
+          "const": "generated-fixture-run"
+        },
+        "schemaVersion": {
+          "type": "string",
+          "const": "0.2.0"
+        },
+        "runId": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$"
+        },
+        "policyRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "canonicalSchemaRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "generatedProjectionRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "generator": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/ToolArtifactLock"
+            },
+            {
+              "properties": {
+                "tool": {
+                  "const": "pydantic-fixturegen"
+                }
+              }
+            }
+          ]
+        },
+        "configuration": {
+          "$ref": "#/$defs/FixtureGeneratorRunConfiguration"
+        },
+        "outputRef": {
+          "$ref": "#/$defs/OfficialContentRef"
+        },
+        "outputDigest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "candidateClass": {
+          "type": "string",
+          "const": "generated-nominal-candidate"
+        },
+        "emittedCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "canonicalAcceptedCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "projectionAcceptedCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "allEmittedCanonicalAccepted": {
+          "type": "boolean"
+        },
+        "allEmittedProjectionAccepted": {
+          "type": "boolean"
+        },
+        "acceptanceDenominator": {
+          "type": "string",
+          "const": "all-instances-emitted-by-recorded-run"
+        },
+        "schemaCompletenessClaimed": {
+          "type": "boolean",
+          "const": false
+        },
+        "canonicalJsonByteDeterministic": {
+          "type": "boolean"
+        },
+        "unsupportedConstructs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "default": []
+        },
+        "providerGaps": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "default": []
+        },
+        "outcome": {
+          "type": "string",
+          "enum": [
+            "accepted",
+            "rejected"
+          ]
+        },
+        "reasons": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "default": []
+        },
+        "completedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "documentType",
+        "schemaVersion",
+        "runId",
+        "policyRef",
+        "canonicalSchemaRef",
+        "generatedProjectionRef",
+        "generator",
+        "configuration",
+        "outputRef",
+        "outputDigest",
+        "candidateClass",
+        "emittedCount",
+        "canonicalAcceptedCount",
+        "projectionAcceptedCount",
+        "allEmittedCanonicalAccepted",
+        "allEmittedProjectionAccepted",
+        "acceptanceDenominator",
+        "schemaCompletenessClaimed",
+        "canonicalJsonByteDeterministic",
+        "unsupportedConstructs",
+        "providerGaps",
+        "outcome",
+        "reasons",
+        "completedAt"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "outcome": {
+                "const": "accepted"
+              }
+            },
+            "required": [
+              "outcome"
+            ]
+          },
+          "then": {
+            "properties": {
+              "allEmittedCanonicalAccepted": {
+                "const": true
+              },
+              "allEmittedProjectionAccepted": {
+                "const": true
+              },
+              "canonicalJsonByteDeterministic": {
+                "const": true
+              },
+              "reasons": {
+                "maxItems": 0
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "reasons": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "discriminator": {
+    "propertyName": "documentType",
+    "mapping": {
+      "schema-conformance-policy": "#/$defs/SchemaConformancePolicyDocument",
+      "projection-conformance-report": "#/$defs/ProjectionConformanceReportDocument",
+      "generated-fixture-run": "#/$defs/GeneratedFixtureRunDocument"
+    }
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/SchemaConformancePolicyDocument"
+    },
+    {
+      "$ref": "#/$defs/ProjectionConformanceReportDocument"
+    },
+    {
+      "$ref": "#/$defs/GeneratedFixtureRunDocument"
+    }
+  ],
+  "x-ppf-extension": {
+    "baseSchema": "urn:python-policy-ppf:generation-policy:0.2.0",
+    "implementationExtensionSchema": "urn:python-policy-ppf:implementation-policy-extension:0.2.0",
+    "extensionVersion": "0.2.0",
+    "strategy": "additive-sidecar"
+  },
+  "x-digest-canonicalization": {
+    "algorithm": "sha256",
+    "serialization": "RFC 8785 JSON Canonicalization Scheme",
+    "targets": [
+      "canonical validator profile",
+      "generated projection",
+      "curated corpus",
+      "property case set",
+      "mutation case set",
+      "fixture generator configuration",
+      "generated fixture output"
+    ]
+  },
+  "x-ppf-invariants": [
+    {
+      "id": "SCHEMA-AUTHORITY",
+      "statement": "The canonical Draft 2020-12 JSON Schema and its pinned validator profile are the sole structural authority; generated Pydantic models are an admitted projection."
+    },
+    {
+      "id": "VALIDATOR-PROFILE-PINNED",
+      "statement": "Canonical validation binds the validator implementation, version, distribution, configuration, dialect, vocabularies, format behavior, optional vocabulary behavior, reference registry, and network policy."
+    },
+    {
+      "id": "PROJECTION-ADMISSION-FIRST",
+      "statement": "Generated Pydantic models undergo differential semantic conformance against independently authored valid, invalid, boundary, adversarial, and regression cases before any generated fixture output is admitted."
+    },
+    {
+      "id": "REPRODUCIBILITY-NOT-CORRECTNESS",
+      "statement": "Normalized-AST and source-byte comparisons are reproducibility evidence only; differential semantic conformance is the projection admission criterion."
+    },
+    {
+      "id": "GENERATED-DENOMINATOR-BOUNDED",
+      "statement": "A 100 percent generated-fixture result means all instances emitted and tested in the recorded run passed both validators; it makes no schema-completeness claim."
+    },
+    {
+      "id": "INDEPENDENT-NEGATIVE-CORPUS",
+      "statement": "Independently authored invalid and boundary cases remain required and are not replaced by generated nominal fixtures."
+    },
+    {
+      "id": "INDEPENDENT-SEARCH",
+      "statement": "Property-based strategies originate from the canonical schema or an independently authored strategy catalog, never from the generated Pydantic projection."
+    },
+    {
+      "id": "MUTATION-INVALID-ADMISSION",
+      "statement": "A mutation-derived candidate is admitted as invalid only when the pinned canonical validator rejects it; operator, seed, target, and candidate provenance are retained."
+    },
+    {
+      "id": "DISAGREEMENT-CLASSIFICATION",
+      "statement": "Every disagreement is classified as unsupported translation, known semantic divergence, or defect; unclassified disagreements prevent projection admission."
+    },
+    {
+      "id": "UNSAFE-ACCEPTANCE-FAIL-CLOSED",
+      "statement": "Canonical rejection combined with Pydantic acceptance is a critical unsafe-acceptance disagreement and fails projection admission."
+    },
+    {
+      "id": "FIXTUREGEN-OPTIONAL",
+      "statement": "pydantic-fixturegen is an optional, replaceable nominal-data producer with no qualification authority and is not required for projection or policy qualification."
+    },
+    {
+      "id": "FIXTUREGEN-NOT-SANDBOX",
+      "statement": "pydantic-fixturegen subprocess limits and Python monkey-patching are not a security boundary for hostile submissions; hostile execution requires an external isolation boundary."
+    },
+    {
+      "id": "PRESENTATION-NONAUTHORITATIVE",
+      "statement": "marimo, CLI, and CI adapters consume immutable canonical evidence, cannot mutate it, and have no qualification authority."
+    },
+    {
+      "id": "COUNT-CONSISTENCY",
+      "statement": "Report producers must enforce testedInstances = agreements + disagreements and emittedCount bounds for canonicalAcceptedCount and projectionAcceptedCount; these arithmetic relations require semantic validation beyond JSON Schema."
+    }
+  ]
+}

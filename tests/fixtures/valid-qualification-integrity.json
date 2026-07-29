@@ -1,0 +1,143 @@
+{
+  "checks": [
+    {
+      "actualDigest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "component": "adapter-set",
+      "componentRef": "adapters",
+      "expectedDigest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "reason": null,
+      "status": "match"
+    },
+    {
+      "actualDigest": "sha256:704af846e5f69b54186d1a038e6930c4883e852fa9ea8ad5d61e54cb41fa9a19",
+      "component": "catalog",
+      "componentRef": "catalog-1",
+      "expectedDigest": "sha256:704af846e5f69b54186d1a038e6930c4883e852fa9ea8ad5d61e54cb41fa9a19",
+      "reason": null,
+      "status": "match"
+    },
+    {
+      "actualDigest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+      "component": "environment",
+      "componentRef": "environment",
+      "expectedDigest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+      "reason": null,
+      "status": "match"
+    },
+    {
+      "actualDigest": "sha256:0930e5d4bb5417cab9b7c6e4b458e78662d3900693e4a7b4f4494a4493baf9f2",
+      "component": "input-manifest",
+      "componentRef": "manifest",
+      "expectedDigest": "sha256:0930e5d4bb5417cab9b7c6e4b458e78662d3900693e4a7b4f4494a4493baf9f2",
+      "reason": null,
+      "status": "match"
+    },
+    {
+      "actualDigest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "component": "invocation-set",
+      "componentRef": "invocations",
+      "expectedDigest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "reason": null,
+      "status": "match"
+    },
+    {
+      "actualDigest": "sha256:ef7b44accc2424b315c95c0a225702524555f4bb21884500e8090bdbb0a8e06d",
+      "component": "plan",
+      "componentRef": "plan",
+      "expectedDigest": "sha256:ef7b44accc2424b315c95c0a225702524555f4bb21884500e8090bdbb0a8e06d",
+      "reason": null,
+      "status": "match"
+    },
+    {
+      "actualDigest": "sha256:26df9b077b7b5a46fdd421e3187a81005f9ca28c788a4df80b509d3a386d2753",
+      "component": "profile",
+      "componentRef": "python-3.14-default",
+      "expectedDigest": "sha256:26df9b077b7b5a46fdd421e3187a81005f9ca28c788a4df80b509d3a386d2753",
+      "reason": null,
+      "status": "match"
+    },
+    {
+      "actualDigest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "component": "sandbox-profile",
+      "componentRef": "sandbox",
+      "expectedDigest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "reason": null,
+      "status": "match"
+    },
+    {
+      "actualDigest": "sha256:63a4372e40abce0f4bac891242bc05afaef91c023da6c504fdea370ebebd77ac",
+      "component": "stage-registry",
+      "componentRef": "stages",
+      "expectedDigest": "sha256:63a4372e40abce0f4bac891242bc05afaef91c023da6c504fdea370ebebd77ac",
+      "reason": null,
+      "status": "match"
+    },
+    {
+      "actualDigest": "sha256:2e23a4efa256b328f4dd109c99f263e536fc09ad68a56cf0d5493541fee35a7b",
+      "component": "toolchain",
+      "componentRef": "toolchain",
+      "expectedDigest": "sha256:2e23a4efa256b328f4dd109c99f263e536fc09ad68a56cf0d5493541fee35a7b",
+      "reason": null,
+      "status": "match"
+    },
+    {
+      "actualDigest": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+      "component": "worktree",
+      "componentRef": "worktree",
+      "expectedDigest": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+      "reason": null,
+      "status": "match"
+    },
+    {
+      "actualDigest": "sha256:1212121212121212121212121212121212121212121212121212121212121212",
+      "component": "invocation",
+      "componentRef": "invocation-1",
+      "expectedDigest": "sha256:1212121212121212121212121212121212121212121212121212121212121212",
+      "reason": null,
+      "status": "match"
+    },
+    {
+      "actualDigest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "component": "raw-artifact",
+      "componentRef": "raw-ty",
+      "expectedDigest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "reason": null,
+      "status": "match"
+    },
+    {
+      "actualDigest": "sha256:1515151515151515151515151515151515151515151515151515151515151515",
+      "component": "producer",
+      "componentRef": "ty-adapter",
+      "expectedDigest": "sha256:1515151515151515151515151515151515151515151515151515151515151515",
+      "reason": null,
+      "status": "match"
+    },
+    {
+      "actualDigest": "sha256:1616161616161616161616161616161616161616161616161616161616161616",
+      "component": "assembler",
+      "componentRef": "application-assembler",
+      "expectedDigest": "sha256:1616161616161616161616161616161616161616161616161616161616161616",
+      "reason": null,
+      "status": "match"
+    }
+  ],
+  "documentType": "qualification-integrity",
+  "inputBindingRef": {
+    "digest": "sha256:782c997392a2ce4c740a825a224aa385bcb099470548316f776479c227350fc0",
+    "id": "binding-1"
+  },
+  "integrityId": "integrity-1",
+  "judgedAt": "2026-07-28T20:01:20Z",
+  "qualificationDisposition": "eligible",
+  "qualificationReportRef": {
+    "digest": "sha256:93481934809d4456e5d03d440fee9fc2860e818b24fb69e3a247eefda01383cf",
+    "id": "report-1"
+  },
+  "reasons": [],
+  "runAssemblyRef": {
+    "digest": "sha256:5741b2180b4cca66732174258a0003906b4fdd7b76fe8c0498f8ab79efbb4ce2",
+    "id": "assembly-1"
+  },
+  "schemaVersion" : "0.2.0",
+  "status": "matched"
+}

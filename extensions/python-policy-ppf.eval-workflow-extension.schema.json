@@ -1,0 +1,1523 @@
+{
+  "$defs": {
+    "AdmissionDerivation": {
+      "additionalProperties": false,
+      "properties": {
+        "admission": {
+          "$ref": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/EvidenceAdmission"
+        },
+        "catalogRule": {
+          "$ref": "#/$defs/EvidenceCatalogRule"
+        },
+        "observationProbeRef": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "admission",
+        "observationProbeRef",
+        "catalogRule"
+      ],
+      "title": "Admission Derivation",
+      "type": "object"
+    },
+    "BaselineDecision": {
+      "title": "Baseline Decision",
+      "enum": [
+        "proceed-to-implementation",
+        "proceed-to-full-qualification",
+        "stop"
+      ],
+      "type": "string"
+    },
+    "BaselineResult": {
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "properties": {
+            "iteration": {
+              "properties": {
+                "kind": {
+                  "const": "baseline"
+                }
+              }
+            }
+          }
+        },
+        {
+          "else": {
+            "properties": {
+              "decision": {
+                "enum": [
+                  "proceed-to-full-qualification",
+                  "stop"
+                ]
+              }
+            }
+          },
+          "if": {
+            "properties": {
+              "iteration": {
+                "properties": {
+                  "judgment": {
+                    "properties": {
+                      "verdict": {
+                        "const": "pass"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "decision": {
+                "enum": [
+                  "proceed-to-implementation",
+                  "proceed-to-full-qualification"
+                ]
+              }
+            }
+          }
+        }
+      ],
+      "properties": {
+        "decision": {
+          "$ref": "#/$defs/BaselineDecision"
+        },
+        "iteration": {
+          "$ref": "#/$defs/EvaluationIteration"
+        }
+      },
+      "required": [
+        "iteration",
+        "decision"
+      ],
+      "title": "Baseline Result",
+      "type": "object"
+    },
+    "CheckStatus": {
+      "title": "Check Status",
+      "enum": [
+        "match",
+        "mismatch",
+        "missing"
+      ],
+      "type": "string"
+    },
+    "EvaluationEvidenceCatalogDocument": {
+      "additionalProperties": false,
+      "properties": {
+        "catalogId": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "type": "string"
+        },
+        "documentType": {
+          "const": "evaluation-evidence-catalog"
+        },
+        "profileRef": {
+          "$ref": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/ContentRef"
+        },
+        "rules": {
+          "items": {
+            "$ref": "#/$defs/EvidenceCatalogRule"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "schemaVersion": {
+          "const": "0.2.0"
+        }
+      },
+      "required": [
+        "documentType",
+        "schemaVersion",
+        "catalogId",
+        "profileRef",
+        "rules"
+      ],
+      "title": "Evaluation Evidence Catalog Document",
+      "type": "object"
+    },
+    "EvaluationInputBindingDocument": {
+      "additionalProperties": false,
+      "properties": {
+        "bindingId": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "type": "string"
+        },
+        "closure": {
+          "$ref": "#/$defs/EvaluationInputClosure"
+        },
+        "closureDigest": {
+          "pattern": "^sha256:[a-f0-9]{64}$",
+          "type": "string"
+        },
+        "createdAt": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "documentType": {
+          "const": "evaluation-input-binding"
+        },
+        "schemaVersion": {
+          "const": "0.2.0"
+        }
+      },
+      "required": [
+        "documentType",
+        "schemaVersion",
+        "bindingId",
+        "closure",
+        "closureDigest",
+        "createdAt"
+      ],
+      "title": "Evaluation Input Binding Document",
+      "type": "object"
+    },
+    "EvaluationInputClosure": {
+      "additionalProperties": false,
+      "properties": {
+        "adapterSet": {
+          "$ref": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/ContentRef"
+        },
+        "catalog": {
+          "$ref": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/ContentRef"
+        },
+        "environment": {
+          "$ref": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/ContentRef"
+        },
+        "inputManifest": {
+          "$ref": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/ContentRef"
+        },
+        "invocationSet": {
+          "$ref": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/ContentRef"
+        },
+        "plan": {
+          "$ref": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/ContentRef"
+        },
+        "profile": {
+          "$ref": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/ContentRef"
+        },
+        "sandboxProfile": {
+          "$ref": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/ContentRef"
+        },
+        "stageRegistry": {
+          "$ref": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/ContentRef"
+        },
+        "toolchain": {
+          "$ref": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/ContentRef"
+        },
+        "worktree": {
+          "$ref": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/ContentRef"
+        }
+      },
+      "required": [
+        "inputManifest",
+        "profile",
+        "plan",
+        "catalog",
+        "stageRegistry",
+        "worktree",
+        "environment",
+        "toolchain",
+        "invocationSet",
+        "sandboxProfile",
+        "adapterSet"
+      ],
+      "title": "Evaluation Input Closure",
+      "type": "object"
+    },
+    "EvaluationIteration": {
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "baseline",
+                  "qualification"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "judgment": {
+                "$ref": "#/$defs/IterationJudgment"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "completed"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "runAssemblyRef": {
+                "$ref": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/ContentRef"
+              }
+            }
+          }
+        }
+      ],
+      "properties": {
+        "completedAt": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "inputClosureDigest": {
+          "pattern": "^sha256:[a-f0-9]{64}$",
+          "type": "string"
+        },
+        "inputs": {
+          "$ref": "#/$defs/EvaluationInputClosure"
+        },
+        "iterationId": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "type": "string"
+        },
+        "judgment": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/IterationJudgment"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "kind": {
+          "$ref": "#/$defs/IterationKind"
+        },
+        "rawArtifactRefs": {
+          "items": {
+            "$ref": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/ContentRef"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "runAssemblyRef": {
+          "anyOf": [
+            {
+              "$ref": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/ContentRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "startedAt": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/IterationStatus"
+        }
+      },
+      "required": [
+        "iterationId",
+        "kind",
+        "status",
+        "inputs",
+        "inputClosureDigest",
+        "runAssemblyRef",
+        "rawArtifactRefs",
+        "judgment",
+        "startedAt",
+        "completedAt"
+      ],
+      "title": "Evaluation Iteration",
+      "type": "object"
+    },
+    "EvaluationMode": {
+      "title": "Evaluation Mode",
+      "enum": [
+        "qualification-only",
+        "implement-and-qualify"
+      ],
+      "type": "string"
+    },
+    "EvaluationProducerEnvelopeDocument": {
+      "additionalProperties": false,
+      "properties": {
+        "documentType": {
+          "const": "evaluation-producer-envelope"
+        },
+        "envelopeId": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "type": "string"
+        },
+        "executions": {
+          "items": {
+            "$ref": "#/$defs/ExecutionEmission"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "fragment": {
+          "$ref": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/EvaluationRunFragmentDocument"
+        },
+        "inputBindingDigest": {
+          "pattern": "^sha256:[a-f0-9]{64}$",
+          "type": "string"
+        },
+        "inputBindingRef": {
+          "$ref": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/ContentRef"
+        },
+        "limitations": {
+          "default": [],
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "observations": {
+          "items": {
+            "$ref": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/Observation"
+          },
+          "type": "array"
+        },
+        "oracleResults": {
+          "default": [],
+          "items": {
+            "$ref": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/OracleResult"
+          },
+          "type": "array"
+        },
+        "producerRef": {
+          "$ref": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/ContentRef"
+        },
+        "schemaVersion": {
+          "const": "0.2.0"
+        }
+      },
+      "required": [
+        "documentType",
+        "schemaVersion",
+        "envelopeId",
+        "producerRef",
+        "inputBindingRef",
+        "inputBindingDigest",
+        "fragment",
+        "executions",
+        "observations"
+      ],
+      "title": "Evaluation Producer Envelope Document",
+      "type": "object"
+    },
+    "EvaluationRunAssemblyDocument": {
+      "additionalProperties": false,
+      "properties": {
+        "assembledAt": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "assemblerRef": {
+          "$ref": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/ContentRef"
+        },
+        "assemblyId": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "type": "string"
+        },
+        "documentType": {
+          "const": "evaluation-run-assembly"
+        },
+        "fragmentBindings": {
+          "items": {
+            "$ref": "#/$defs/FragmentAssemblyBinding"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "inputBindingDigest": {
+          "pattern": "^sha256:[a-f0-9]{64}$",
+          "type": "string"
+        },
+        "inputBindingRef": {
+          "$ref": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/ContentRef"
+        },
+        "ownership": {
+          "const": "application-owned"
+        },
+        "rawArtifactRefs": {
+          "items": {
+            "$ref": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/ContentRef"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "runRef": {
+          "$ref": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/ContentRef"
+        },
+        "schemaVersion": {
+          "const": "0.2.0"
+        }
+      },
+      "required": [
+        "documentType",
+        "schemaVersion",
+        "assemblyId",
+        "ownership",
+        "assemblerRef",
+        "inputBindingRef",
+        "inputBindingDigest",
+        "runRef",
+        "fragmentBindings",
+        "rawArtifactRefs",
+        "assembledAt"
+      ],
+      "title": "Evaluation Run Assembly Document",
+      "type": "object"
+    },
+    "EvaluationWorkflowDocument": {
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "else": {
+            "properties": {
+              "baseline": {
+                "$ref": "#/$defs/BaselineResult"
+              }
+            }
+          },
+          "if": {
+            "properties": {
+              "mode": {
+                "const": "qualification-only"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "baseline": {
+                "type": "null"
+              },
+              "implementationIterations": {
+                "maxItems": 0
+              },
+              "qualificationIteration": {
+                "allOf": [
+                  {
+                    "$ref": "#/$defs/EvaluationIteration"
+                  },
+                  {
+                    "properties": {
+                      "kind": {
+                        "const": "qualification"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "baseline": {
+                "properties": {
+                  "decision": {
+                    "const": "proceed-to-implementation"
+                  }
+                }
+              },
+              "mode": {
+                "const": "implement-and-qualify"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "implementationIterations": {
+                "items": {
+                  "allOf": [
+                    {
+                      "$ref": "#/$defs/EvaluationIteration"
+                    },
+                    {
+                      "properties": {
+                        "kind": {
+                          "const": "implementation"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "minItems": 1
+              },
+              "qualificationIteration": {
+                "allOf": [
+                  {
+                    "$ref": "#/$defs/EvaluationIteration"
+                  },
+                  {
+                    "properties": {
+                      "kind": {
+                        "const": "qualification"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "baseline": {
+                "properties": {
+                  "decision": {
+                    "enum": [
+                      "proceed-to-full-qualification",
+                      "stop"
+                    ]
+                  }
+                }
+              },
+              "mode": {
+                "const": "implement-and-qualify"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "implementationIterations": {
+                "maxItems": 0
+              }
+            }
+          }
+        }
+      ],
+      "properties": {
+        "baseline": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/BaselineResult"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "currentState": {
+          "$ref": "#/$defs/WorkflowState"
+        },
+        "documentType": {
+          "const": "evaluation-workflow"
+        },
+        "implementationIterations": {
+          "items": {
+            "$ref": "#/$defs/EvaluationIteration"
+          },
+          "type": "array"
+        },
+        "inputBindingRef": {
+          "$ref": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/ContentRef"
+        },
+        "mode": {
+          "$ref": "#/$defs/EvaluationMode"
+        },
+        "qualificationIteration": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EvaluationIteration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "schemaVersion": {
+          "const": "0.2.0"
+        },
+        "transitions": {
+          "items": {
+            "$ref": "#/$defs/WorkflowTransition"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "workflowId": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "documentType",
+        "schemaVersion",
+        "workflowId",
+        "mode",
+        "inputBindingRef",
+        "currentState",
+        "baseline",
+        "implementationIterations",
+        "qualificationIteration",
+        "transitions"
+      ],
+      "title": "Evaluation Workflow Document",
+      "type": "object"
+    },
+    "EvidenceAdmissionDerivationDocument": {
+      "additionalProperties": false,
+      "properties": {
+        "catalogRef": {
+          "$ref": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/ContentRef"
+        },
+        "derivationId": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "type": "string"
+        },
+        "derivations": {
+          "items": {
+            "$ref": "#/$defs/AdmissionDerivation"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "documentType": {
+          "const": "evidence-admission-derivation"
+        },
+        "judgeRef": {
+          "$ref": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/ContentRef"
+        },
+        "qualificationReportRef": {
+          "$ref": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/ContentRef"
+        },
+        "schemaVersion": {
+          "const": "0.2.0"
+        }
+      },
+      "required": [
+        "documentType",
+        "schemaVersion",
+        "derivationId",
+        "judgeRef",
+        "catalogRef",
+        "qualificationReportRef",
+        "derivations"
+      ],
+      "title": "Evidence Admission Derivation Document",
+      "type": "object"
+    },
+    "EvidenceCatalogRule": {
+      "additionalProperties": false,
+      "properties": {
+        "assignedReliability": {
+          "$ref": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/Reliability"
+        },
+        "claimRef": {
+          "pattern": "^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$",
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "type": "string"
+        },
+        "limitations": {
+          "default": [],
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "oracleRef": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "probeRef": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "claimRef",
+        "probeRef",
+        "assignedReliability"
+      ],
+      "title": "Evidence Catalog Rule",
+      "type": "object"
+    },
+    "ExecutionEmission": {
+      "additionalProperties": false,
+      "properties": {
+        "invocationRef": {
+          "$ref": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/ContentRef"
+        },
+        "rawArtifactRefs": {
+          "items": {
+            "$ref": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/ContentRef"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "record": {
+          "$ref": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/ExecutionRecord"
+        }
+      },
+      "required": [
+        "record",
+        "invocationRef",
+        "rawArtifactRefs"
+      ],
+      "title": "Execution Emission",
+      "type": "object"
+    },
+    "FragmentAssemblyBinding": {
+      "additionalProperties": false,
+      "properties": {
+        "fragmentRef": {
+          "$ref": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/ContentRef"
+        },
+        "producerEnvelopeRef": {
+          "$ref": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/ContentRef"
+        },
+        "stageRef": {
+          "$ref": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/StageId"
+        }
+      },
+      "required": [
+        "fragmentRef",
+        "producerEnvelopeRef",
+        "stageRef"
+      ],
+      "title": "Fragment Assembly Binding",
+      "type": "object"
+    },
+    "InputComponentKind": {
+      "title": "Input Component Kind",
+      "enum": [
+        "input-manifest",
+        "profile",
+        "plan",
+        "catalog",
+        "stage-registry",
+        "worktree",
+        "environment",
+        "toolchain",
+        "invocation-set",
+        "sandbox-profile",
+        "adapter-set",
+        "invocation",
+        "raw-artifact",
+        "producer",
+        "assembler"
+      ],
+      "type": "string"
+    },
+    "InputDigestCheck": {
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "match"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "actualDigest": {
+                "pattern": "^sha256:[a-f0-9]{64}$",
+                "type": "string"
+              },
+              "reason": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "missing"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "actualDigest": {
+                "type": "null"
+              },
+              "reason": {
+                "minLength": 1,
+                "type": "string"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "mismatch"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "actualDigest": {
+                "pattern": "^sha256:[a-f0-9]{64}$",
+                "type": "string"
+              },
+              "reason": {
+                "minLength": 1,
+                "type": "string"
+              }
+            }
+          }
+        }
+      ],
+      "properties": {
+        "actualDigest": {
+          "anyOf": [
+            {
+              "pattern": "^sha256:[a-f0-9]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "component": {
+          "$ref": "#/$defs/InputComponentKind"
+        },
+        "componentRef": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "type": "string"
+        },
+        "expectedDigest": {
+          "pattern": "^sha256:[a-f0-9]{64}$",
+          "type": "string"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "$ref": "#/$defs/CheckStatus"
+        }
+      },
+      "required": [
+        "component",
+        "componentRef",
+        "expectedDigest",
+        "actualDigest",
+        "status",
+        "reason"
+      ],
+      "title": "Input Digest Check",
+      "type": "object"
+    },
+    "IntegrityStatus": {
+      "title": "Integrity Status",
+      "enum": [
+        "matched",
+        "mismatched",
+        "incomplete"
+      ],
+      "type": "string"
+    },
+    "IterationJudgment": {
+      "additionalProperties": false,
+      "properties": {
+        "rationale": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "verdict": {
+          "$ref": "#/$defs/Judgment"
+        }
+      },
+      "required": [
+        "verdict",
+        "rationale"
+      ],
+      "title": "Iteration Judgment",
+      "type": "object"
+    },
+    "IterationKind": {
+      "title": "Iteration Kind",
+      "enum": [
+        "baseline",
+        "implementation",
+        "qualification"
+      ],
+      "type": "string"
+    },
+    "IterationStatus": {
+      "title": "Iteration Status",
+      "enum": [
+        "completed",
+        "failed",
+        "inconclusive",
+        "cancelled"
+      ],
+      "type": "string"
+    },
+    "Judgment": {
+      "title": "Judgment",
+      "enum": [
+        "pass",
+        "fail",
+        "inconclusive"
+      ],
+      "type": "string"
+    },
+    "QualificationDisposition": {
+      "title": "Qualification Disposition",
+      "enum": [
+        "eligible",
+        "rejected"
+      ],
+      "type": "string"
+    },
+    "QualificationIntegrityDocument": {
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "else": {
+            "properties": {
+              "qualificationDisposition": {
+                "const": "rejected"
+              },
+              "reasons": {
+                "minItems": 1
+              }
+            }
+          },
+          "if": {
+            "properties": {
+              "status": {
+                "const": "matched"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "checks": {
+                "items": {
+                  "allOf": [
+                    {
+                      "$ref": "#/$defs/InputDigestCheck"
+                    },
+                    {
+                      "properties": {
+                        "status": {
+                          "const": "match"
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "qualificationDisposition": {
+                "const": "eligible"
+              },
+              "reasons": {
+                "maxItems": 0
+              }
+            }
+          }
+        }
+      ],
+      "properties": {
+        "checks": {
+          "items": {
+            "$ref": "#/$defs/InputDigestCheck"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "documentType": {
+          "const": "qualification-integrity"
+        },
+        "inputBindingRef": {
+          "$ref": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/ContentRef"
+        },
+        "integrityId": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "type": "string"
+        },
+        "judgedAt": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "qualificationDisposition": {
+          "$ref": "#/$defs/QualificationDisposition"
+        },
+        "qualificationReportRef": {
+          "$ref": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/ContentRef"
+        },
+        "reasons": {
+          "default": [],
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "runAssemblyRef": {
+          "$ref": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/ContentRef"
+        },
+        "schemaVersion": {
+          "const": "0.2.0"
+        },
+        "status": {
+          "$ref": "#/$defs/IntegrityStatus"
+        }
+      },
+      "required": [
+        "documentType",
+        "schemaVersion",
+        "integrityId",
+        "qualificationReportRef",
+        "runAssemblyRef",
+        "inputBindingRef",
+        "checks",
+        "status",
+        "qualificationDisposition",
+        "reasons",
+        "judgedAt"
+      ],
+      "title": "Qualification Integrity Document",
+      "type": "object"
+    },
+    "WorkflowState": {
+      "title": "Workflow State",
+      "enum": [
+        "planned",
+        "inputs-bound",
+        "baseline-running",
+        "baseline-judged",
+        "implementation-running",
+        "full-qualification-running",
+        "qualified",
+        "rejected",
+        "stopped"
+      ],
+      "type": "string"
+    },
+    "WorkflowTransition": {
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "oneOf": [
+            {
+              "properties": {
+                "cause": {
+                  "enum": [
+                    "inputs-locked"
+                  ]
+                },
+                "from": {
+                  "const": "planned"
+                },
+                "to": {
+                  "const": "inputs-bound"
+                }
+              },
+              "required": [
+                "from",
+                "to",
+                "cause"
+              ],
+              "type": "object"
+            },
+            {
+              "properties": {
+                "cause": {
+                  "enum": [
+                    "baseline-started"
+                  ]
+                },
+                "from": {
+                  "const": "inputs-bound"
+                },
+                "to": {
+                  "const": "baseline-running"
+                }
+              },
+              "required": [
+                "from",
+                "to",
+                "cause"
+              ],
+              "type": "object"
+            },
+            {
+              "properties": {
+                "cause": {
+                  "enum": [
+                    "qualification-only-started"
+                  ]
+                },
+                "from": {
+                  "const": "inputs-bound"
+                },
+                "to": {
+                  "const": "full-qualification-running"
+                }
+              },
+              "required": [
+                "from",
+                "to",
+                "cause"
+              ],
+              "type": "object"
+            },
+            {
+              "properties": {
+                "cause": {
+                  "enum": [
+                    "baseline-passed",
+                    "baseline-failed",
+                    "baseline-inconclusive"
+                  ]
+                },
+                "from": {
+                  "const": "baseline-running"
+                },
+                "to": {
+                  "const": "baseline-judged"
+                }
+              },
+              "required": [
+                "from",
+                "to",
+                "cause"
+              ],
+              "type": "object"
+            },
+            {
+              "properties": {
+                "cause": {
+                  "enum": [
+                    "implementation-authorized"
+                  ]
+                },
+                "from": {
+                  "const": "baseline-judged"
+                },
+                "to": {
+                  "const": "implementation-running"
+                }
+              },
+              "required": [
+                "from",
+                "to",
+                "cause"
+              ],
+              "type": "object"
+            },
+            {
+              "properties": {
+                "cause": {
+                  "enum": [
+                    "qualification-authorized"
+                  ]
+                },
+                "from": {
+                  "const": "baseline-judged"
+                },
+                "to": {
+                  "const": "full-qualification-running"
+                }
+              },
+              "required": [
+                "from",
+                "to",
+                "cause"
+              ],
+              "type": "object"
+            },
+            {
+              "properties": {
+                "cause": {
+                  "enum": [
+                    "baseline-failed",
+                    "baseline-inconclusive"
+                  ]
+                },
+                "from": {
+                  "const": "baseline-judged"
+                },
+                "to": {
+                  "const": "stopped"
+                }
+              },
+              "required": [
+                "from",
+                "to",
+                "cause"
+              ],
+              "type": "object"
+            },
+            {
+              "properties": {
+                "cause": {
+                  "enum": [
+                    "next-implementation-iteration"
+                  ]
+                },
+                "from": {
+                  "const": "implementation-running"
+                },
+                "to": {
+                  "const": "implementation-running"
+                }
+              },
+              "required": [
+                "from",
+                "to",
+                "cause"
+              ],
+              "type": "object"
+            },
+            {
+              "properties": {
+                "cause": {
+                  "enum": [
+                    "implementation-completed"
+                  ]
+                },
+                "from": {
+                  "const": "implementation-running"
+                },
+                "to": {
+                  "const": "full-qualification-running"
+                }
+              },
+              "required": [
+                "from",
+                "to",
+                "cause"
+              ],
+              "type": "object"
+            },
+            {
+              "properties": {
+                "cause": {
+                  "enum": [
+                    "qualification-passed"
+                  ]
+                },
+                "from": {
+                  "const": "full-qualification-running"
+                },
+                "to": {
+                  "const": "qualified"
+                }
+              },
+              "required": [
+                "from",
+                "to",
+                "cause"
+              ],
+              "type": "object"
+            },
+            {
+              "properties": {
+                "cause": {
+                  "enum": [
+                    "qualification-failed",
+                    "qualification-inconclusive",
+                    "input-integrity-rejected"
+                  ]
+                },
+                "from": {
+                  "const": "full-qualification-running"
+                },
+                "to": {
+                  "const": "rejected"
+                }
+              },
+              "required": [
+                "from",
+                "to",
+                "cause"
+              ],
+              "type": "object"
+            },
+            {
+              "properties": {
+                "cause": {
+                  "enum": [
+                    "input-integrity-revoked"
+                  ]
+                },
+                "from": {
+                  "const": "qualified"
+                },
+                "to": {
+                  "const": "rejected"
+                }
+              },
+              "required": [
+                "from",
+                "to",
+                "cause"
+              ],
+              "type": "object"
+            }
+          ]
+        }
+      ],
+      "properties": {
+        "at": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "cause": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "from": {
+          "$ref": "#/$defs/WorkflowState"
+        },
+        "to": {
+          "$ref": "#/$defs/WorkflowState"
+        },
+        "transitionId": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "transitionId",
+        "from",
+        "to",
+        "cause",
+        "at"
+      ],
+      "title": "Workflow Transition",
+      "type": "object"
+    }
+  },
+  "$id": "urn:python-policy-ppf:extension:evaluation-workflow:0.2.0",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Additive sidecar documents for evaluation workflow control, digest closure, producer fragments, application-owned run assembly, catalog-derived reliability, and fail-closed qualification integrity. The official urn:python-policy-ppf:generation-policy:0.2.0 schema remains unchanged.",
+  "discriminator": {
+    "mapping": {
+      "evaluation-evidence-catalog": "#/$defs/EvaluationEvidenceCatalogDocument",
+      "evaluation-input-binding": "#/$defs/EvaluationInputBindingDocument",
+      "evaluation-producer-envelope": "#/$defs/EvaluationProducerEnvelopeDocument",
+      "evaluation-run-assembly": "#/$defs/EvaluationRunAssemblyDocument",
+      "evaluation-workflow": "#/$defs/EvaluationWorkflowDocument",
+      "evidence-admission-derivation": "#/$defs/EvidenceAdmissionDerivationDocument",
+      "qualification-integrity": "#/$defs/QualificationIntegrityDocument"
+    },
+    "propertyName": "documentType"
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/EvaluationEvidenceCatalogDocument"
+    },
+    {
+      "$ref": "#/$defs/EvaluationInputBindingDocument"
+    },
+    {
+      "$ref": "#/$defs/EvaluationProducerEnvelopeDocument"
+    },
+    {
+      "$ref": "#/$defs/EvaluationRunAssemblyDocument"
+    },
+    {
+      "$ref": "#/$defs/EvaluationWorkflowDocument"
+    },
+    {
+      "$ref": "#/$defs/EvidenceAdmissionDerivationDocument"
+    },
+    {
+      "$ref": "#/$defs/QualificationIntegrityDocument"
+    }
+  ],
+  "title": "Python Policy PPF Evaluation Workflow Extension",
+  "x-ppf-extension": {
+    "baseSchema": "urn:python-policy-ppf:generation-policy:0.2.0",
+    "baseSchemaFile": "../references/python-policy-ppf.schema.json",
+    "extensionVersion": "0.2.0",
+    "strategy": "additive-sidecar"
+  },
+  "x-digest-canonicalization": {
+    "algorithm": "sha256",
+    "serialization": "RFC 8785 JSON Canonicalization Scheme",
+    "target": "EvaluationInputBindingDocument.closure"
+  },
+  "x-ppf-invariants": [
+    {
+      "id": "EXT-OFFICIAL-IMMUTABLE",
+      "statement": "The official base schema is not modified; extension documents bind official artifacts through ContentRef digests and reuse official definitions by external $ref."
+    },
+    {
+      "id": "EXT-INPUT-CLOSURE",
+      "statement": "Every evaluation iteration binds the exact input manifest, profile, plan, catalog, stage registry, worktree, environment, toolchain, invocation set, sandbox profile, and adapter set used for that iteration."
+    },
+    {
+      "id": "EXT-MANIFEST-EQUALITY",
+      "statement": "The profile, plan, worktree, environment, toolchain, invocation set, sandbox profile, and adapter set digests in an EvaluationInputClosure must equal the corresponding digests in the referenced official EvaluationInputManifestDocument."
+    },
+    {
+      "id": "EXT-RAW-EVIDENCE",
+      "statement": "Every producer execution and every evaluation iteration has at least one digest-addressed raw artifact; each serialized invocation is separately digest-addressed by invocationRef."
+    },
+    {
+      "id": "EXT-FAIL-CLOSED",
+      "statement": "Any missing or mismatched required input, invocation, producer, assembler, or raw-artifact digest makes qualification ineligible and requires a rejected qualification disposition."
+    },
+    {
+      "id": "EXT-WORKFLOW-MODES",
+      "statement": "Qualification-only workflows enter full qualification without a baseline or implementation iteration; implement-and-qualify workflows judge the baseline as pass, fail, or inconclusive before selecting implementation, full qualification, or stop."
+    },
+    {
+      "id": "EXT-ASSEMBLER-OWNERSHIP",
+      "statement": "Exactly one EvaluationRunAssemblyDocument owns each official EvaluationRunDocument; tool integrations emit producer envelopes containing official fragments, executions, observations, and oracle results, not application-level runs."
+    },
+    {
+      "id": "EXT-FRAGMENT-CONSISTENCY",
+      "statement": "Fragment executionRefs, observationRefs, oracleResultRefs, stageRef, and inputManifestDigest must match the records enclosed by the same producer envelope."
+    },
+    {
+      "id": "EXT-CATALOG-RELIABILITY",
+      "statement": "Producers emit probe identity and diagnostics only. The judge derives assignedReliability from the locked evidence catalog; each official EvidenceAdmission must match its catalog rule's claimRef, probeRef, and assignedReliability."
+    },
+    {
+      "id": "EXT-STAGE-AUTHORITY",
+      "statement": "All evaluation stage identifiers are official StageId values admitted by the single locked StageRegistryDocument. Stage dependencies remain StageId-to-StageId edges; workflow state guards are represented only as WorkflowTransition causes."
+    },
+    {
+      "id": "EXT-DIGEST-CHECK-COMPLETE",
+      "statement": "Qualification integrity contains exactly one check for every required closure component and all used invocations, producers, assemblers, and raw artifacts; a match status requires actualDigest to equal expectedDigest."
+    }
+  ]
+}

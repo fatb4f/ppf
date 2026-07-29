@@ -1,0 +1,42 @@
+{
+  "assembledAt": "2026-07-28T20:01:10Z",
+  "assemblerRef": {
+    "digest": "sha256:1616161616161616161616161616161616161616161616161616161616161616",
+    "id": "application-assembler",
+    "uri": "https://example.invalid/application-assembler"
+  },
+  "assemblyId": "assembly-1",
+  "documentType": "evaluation-run-assembly",
+  "fragmentBindings": [
+    {
+      "fragmentRef": {
+        "digest": "sha256:1717171717171717171717171717171717171717171717171717171717171717",
+        "id": "fragment-1",
+        "uri": "embedded:fragment-1"
+      },
+      "producerEnvelopeRef": {
+        "digest": "sha256:5b7f5c2c9b180438ed429910e9cae50e385d965699d3f19ea1b9664d5c573abb",
+        "id": "envelope-1"
+      },
+      "stageRef": "typing"
+    }
+  ],
+  "inputBindingDigest": "sha256:782c997392a2ce4c740a825a224aa385bcb099470548316f776479c227350fc0",
+  "inputBindingRef": {
+    "digest": "sha256:782c997392a2ce4c740a825a224aa385bcb099470548316f776479c227350fc0",
+    "id": "binding-1"
+  },
+  "ownership": "application-owned",
+  "rawArtifactRefs": [
+    {
+      "digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "id": "raw-ty",
+      "uri": "https://example.invalid/raw-ty"
+    }
+  ],
+  "runRef": {
+    "digest": "sha256:7a52c18ca20eddeae6e68c61f593044f680ff86e2a1d1e3095d7a13246019d24",
+    "id": "run-1"
+  },
+  "schemaVersion" : "0.2.0"
+}

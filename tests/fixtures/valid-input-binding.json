@@ -1,0 +1,58 @@
+{
+  "bindingId": "binding-1",
+  "closure": {
+    "adapterSet": {
+      "digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "id": "adapters",
+      "uri": "https://example.invalid/adapters"
+    },
+    "catalog": {
+      "digest": "sha256:704af846e5f69b54186d1a038e6930c4883e852fa9ea8ad5d61e54cb41fa9a19",
+      "id": "catalog-1"
+    },
+    "environment": {
+      "digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+      "id": "environment",
+      "uri": "https://example.invalid/environment"
+    },
+    "inputManifest": {
+      "digest": "sha256:0930e5d4bb5417cab9b7c6e4b458e78662d3900693e4a7b4f4494a4493baf9f2",
+      "id": "manifest"
+    },
+    "invocationSet": {
+      "digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "id": "invocations",
+      "uri": "https://example.invalid/invocations"
+    },
+    "plan": {
+      "digest": "sha256:ef7b44accc2424b315c95c0a225702524555f4bb21884500e8090bdbb0a8e06d",
+      "id": "plan"
+    },
+    "profile": {
+      "digest": "sha256:26df9b077b7b5a46fdd421e3187a81005f9ca28c788a4df80b509d3a386d2753",
+      "id": "python-3.14-default"
+    },
+    "sandboxProfile": {
+      "digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "id": "sandbox",
+      "uri": "https://example.invalid/sandbox"
+    },
+    "stageRegistry": {
+      "digest": "sha256:63a4372e40abce0f4bac891242bc05afaef91c023da6c504fdea370ebebd77ac",
+      "id": "stages"
+    },
+    "toolchain": {
+      "digest": "sha256:2e23a4efa256b328f4dd109c99f263e536fc09ad68a56cf0d5493541fee35a7b",
+      "id": "toolchain"
+    },
+    "worktree": {
+      "digest": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+      "id": "worktree",
+      "uri": "https://example.invalid/worktree"
+    }
+  },
+  "closureDigest": "sha256:347ea17520682c515e1990306ad4831d5ad8a4d2a3001e5bf8d41350bc91d2be",
+  "createdAt": "2026-07-28T19:59:00Z",
+  "documentType": "evaluation-input-binding",
+  "schemaVersion" : "0.2.0"
+}

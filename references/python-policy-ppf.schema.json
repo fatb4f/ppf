@@ -1,0 +1,2486 @@
+{
+  "$defs": {
+    "Applicability": {
+      "additionalProperties": false,
+      "properties": {
+        "excludePaths": {
+          "default": [],
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Excludepaths",
+          "type": "array"
+        },
+        "includePaths": {
+          "default": [],
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Includepaths",
+          "type": "array"
+        },
+        "predicateRefs": {
+          "default": [],
+          "items": {
+            "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+            "type": "string"
+          },
+          "title": "Predicaterefs",
+          "type": "array"
+        },
+        "subjectKinds": {
+          "items": {
+            "$ref": "#/$defs/SubjectKind"
+          },
+          "title": "Subjectkinds",
+          "type": "array"
+        }
+      },
+      "required": [
+        "subjectKinds"
+      ],
+      "title": "Applicability",
+      "type": "object"
+    },
+    "AssessorKind": {
+      "enum": [
+        "cyclopts",
+        "pydantic",
+        "pytest",
+        "hypothesis",
+        "ruff",
+        "ty",
+        "ansible",
+        "custom"
+      ],
+      "title": "AssessorKind",
+      "type": "string"
+    },
+    "AuthorityClass": {
+      "enum": [
+        "canonical-specification",
+        "versioned-rationale",
+        "project-policy",
+        "advisory-reference",
+        "diagnostic-documentation"
+      ],
+      "title": "AuthorityClass",
+      "type": "string"
+    },
+    "AuthoritySource": {
+      "additionalProperties": false,
+      "properties": {
+        "authorityClass": {
+          "$ref": "#/$defs/AuthorityClass"
+        },
+        "canonicalFor": {
+          "default": [],
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Canonicalfor",
+          "type": "array"
+        },
+        "digest": {
+          "pattern": "^sha256:[a-f0-9]{64}$",
+          "title": "Digest",
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "revision": {
+          "minLength": 1,
+          "title": "Revision",
+          "type": "string"
+        },
+        "title": {
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "uri": {
+          "format": "uri-reference",
+          "minLength": 1,
+          "title": "Uri",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "authorityClass",
+        "title",
+        "uri",
+        "revision",
+        "digest"
+      ],
+      "title": "AuthoritySource",
+      "type": "object"
+    },
+    "ClaimAssessment": {
+      "additionalProperties": false,
+      "properties": {
+        "capability": {
+          "minLength": 1,
+          "title": "Capability",
+          "type": "string"
+        },
+        "gateRef": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "title": "Gateref",
+          "type": "string"
+        },
+        "limitations": {
+          "default": [],
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Limitations",
+          "type": "array"
+        },
+        "required": {
+          "default": true,
+          "title": "Required",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "gateRef",
+        "capability"
+      ],
+      "title": "ClaimAssessment",
+      "type": "object"
+    },
+    "ContentRef": {
+      "additionalProperties": false,
+      "properties": {
+        "digest": {
+          "pattern": "^sha256:[a-f0-9]{64}$",
+          "title": "Digest",
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "mediaType": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mediatype"
+        },
+        "uri": {
+          "anyOf": [
+            {
+              "format": "uri-reference",
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Uri"
+        }
+      },
+      "required": [
+        "id",
+        "digest"
+      ],
+      "title": "ContentRef",
+      "type": "object"
+    },
+    "CounterexampleDocument": {
+      "additionalProperties": false,
+      "properties": {
+        "artifactRef": {
+          "$ref": "#/$defs/ContentRef"
+        },
+        "caseRef": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "title": "Caseref",
+          "type": "string"
+        },
+        "claimRef": {
+          "pattern": "^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$",
+          "title": "Claimref",
+          "type": "string"
+        },
+        "counterexampleId": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "title": "Counterexampleid",
+          "type": "string"
+        },
+        "documentType": {
+          "const": "counterexample",
+          "default": "counterexample",
+          "title": "Documenttype",
+          "type": "string"
+        },
+        "hypothesis": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/HypothesisProvenance"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "observationRef": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "title": "Observationref",
+          "type": "string"
+        },
+        "replayInvocation": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Replayinvocation",
+          "type": "array"
+        },
+        "schemaVersion": {
+          "const": "0.2.0",
+          "default": "0.2.0",
+          "title": "Schemaversion",
+          "type": "string"
+        },
+        "serializer": {
+          "minLength": 1,
+          "title": "Serializer",
+          "type": "string"
+        },
+        "shrunk": {
+          "title": "Shrunk",
+          "type": "boolean"
+        },
+        "value": {
+          "$ref": "#/$defs/JsonValue"
+        }
+      },
+      "required": [
+        "documentType",
+        "schemaVersion",
+        "counterexampleId",
+        "claimRef",
+        "caseRef",
+        "observationRef",
+        "serializer",
+        "value",
+        "replayInvocation",
+        "shrunk",
+        "artifactRef"
+      ],
+      "title": "CounterexampleDocument",
+      "type": "object"
+    },
+    "EvaluationCase": {
+      "additionalProperties": false,
+      "properties": {
+        "claimRef": {
+          "pattern": "^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$",
+          "title": "Claimref",
+          "type": "string"
+        },
+        "executionProfileRef": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "title": "Executionprofileref",
+          "type": "string"
+        },
+        "fixture": {
+          "$ref": "#/$defs/FixtureRef"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "oracleRefs": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+            "type": "string"
+          },
+          "title": "Oraclerefs",
+          "type": "array"
+        },
+        "probe": {
+          "$ref": "#/$defs/ProbeInvocation"
+        },
+        "stage": {
+          "$ref": "#/$defs/StageId"
+        },
+        "subject": {
+          "$ref": "#/$defs/SubjectRef"
+        }
+      },
+      "required": [
+        "id",
+        "claimRef",
+        "subject",
+        "fixture",
+        "probe",
+        "oracleRefs",
+        "stage",
+        "executionProfileRef"
+      ],
+      "title": "EvaluationCase",
+      "type": "object"
+    },
+    "EvaluationInputManifestDocument": {
+      "additionalProperties": false,
+      "properties": {
+        "adapterSet": {
+          "$ref": "#/$defs/ContentRef"
+        },
+        "documentType": {
+          "const": "evaluation-input-manifest",
+          "default": "evaluation-input-manifest",
+          "title": "Documenttype",
+          "type": "string"
+        },
+        "environment": {
+          "$ref": "#/$defs/ContentRef"
+        },
+        "invocationSet": {
+          "$ref": "#/$defs/ContentRef"
+        },
+        "manifestId": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "title": "Manifestid",
+          "type": "string"
+        },
+        "plan": {
+          "$ref": "#/$defs/ContentRef"
+        },
+        "profile": {
+          "$ref": "#/$defs/ContentRef"
+        },
+        "sandboxProfile": {
+          "$ref": "#/$defs/ContentRef"
+        },
+        "schemaVersion": {
+          "const": "0.2.0",
+          "default": "0.2.0",
+          "title": "Schemaversion",
+          "type": "string"
+        },
+        "toolchain": {
+          "$ref": "#/$defs/ContentRef"
+        },
+        "worktree": {
+          "$ref": "#/$defs/ContentRef"
+        }
+      },
+      "required": [
+        "documentType",
+        "schemaVersion",
+        "manifestId",
+        "profile",
+        "plan",
+        "worktree",
+        "environment",
+        "toolchain",
+        "invocationSet",
+        "sandboxProfile",
+        "adapterSet"
+      ],
+      "title": "EvaluationInputManifestDocument",
+      "type": "object"
+    },
+    "EvaluationPlanDocument": {
+      "additionalProperties": false,
+      "properties": {
+        "cases": {
+          "items": {
+            "$ref": "#/$defs/EvaluationCase"
+          },
+          "minItems": 1,
+          "title": "Cases",
+          "type": "array"
+        },
+        "documentType": {
+          "const": "evaluation-plan",
+          "default": "evaluation-plan",
+          "title": "Documenttype",
+          "type": "string"
+        },
+        "environmentRef": {
+          "$ref": "#/$defs/ContentRef"
+        },
+        "planId": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "title": "Planid",
+          "type": "string"
+        },
+        "profileRef": {
+          "$ref": "#/$defs/ContentRef"
+        },
+        "sandboxProfile": {
+          "$ref": "#/$defs/SandboxProfile"
+        },
+        "schemaVersion": {
+          "const": "0.2.0",
+          "default": "0.2.0",
+          "title": "Schemaversion",
+          "type": "string"
+        },
+        "toolchainRef": {
+          "$ref": "#/$defs/ContentRef"
+        },
+        "worktreeRef": {
+          "$ref": "#/$defs/ContentRef"
+        }
+      },
+      "required": [
+        "documentType",
+        "schemaVersion",
+        "planId",
+        "profileRef",
+        "worktreeRef",
+        "environmentRef",
+        "toolchainRef",
+        "sandboxProfile",
+        "cases"
+      ],
+      "title": "EvaluationPlanDocument",
+      "type": "object"
+    },
+    "EvaluationRunDocument": {
+      "additionalProperties": false,
+      "properties": {
+        "completedAt": {
+          "format": "date-time",
+          "title": "Completedat",
+          "type": "string"
+        },
+        "documentType": {
+          "const": "evaluation-run",
+          "default": "evaluation-run",
+          "title": "Documenttype",
+          "type": "string"
+        },
+        "executions": {
+          "items": {
+            "$ref": "#/$defs/ExecutionRecord"
+          },
+          "title": "Executions",
+          "type": "array"
+        },
+        "fragments": {
+          "items": {
+            "$ref": "#/$defs/EvaluationRunFragmentDocument"
+          },
+          "title": "Fragments",
+          "type": "array"
+        },
+        "inputManifest": {
+          "$ref": "#/$defs/ContentRef"
+        },
+        "observations": {
+          "items": {
+            "$ref": "#/$defs/Observation"
+          },
+          "title": "Observations",
+          "type": "array"
+        },
+        "oracleResults": {
+          "items": {
+            "$ref": "#/$defs/OracleResult"
+          },
+          "title": "Oracleresults",
+          "type": "array"
+        },
+        "rawArtifactRefs": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ContentRef"
+          },
+          "title": "Rawartifactrefs",
+          "type": "array"
+        },
+        "runId": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "title": "Runid",
+          "type": "string"
+        },
+        "schemaVersion": {
+          "const": "0.2.0",
+          "default": "0.2.0",
+          "title": "Schemaversion",
+          "type": "string"
+        },
+        "startedAt": {
+          "format": "date-time",
+          "title": "Startedat",
+          "type": "string"
+        }
+      },
+      "required": [
+        "documentType",
+        "schemaVersion",
+        "runId",
+        "inputManifest",
+        "startedAt",
+        "completedAt",
+        "executions",
+        "observations",
+        "oracleResults",
+        "fragments"
+      ],
+      "title": "EvaluationRunDocument",
+      "type": "object"
+    },
+    "EvaluationRunFragmentDocument": {
+      "additionalProperties": false,
+      "properties": {
+        "artifactRefs": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ContentRef"
+          },
+          "title": "Artifactrefs",
+          "type": "array"
+        },
+        "documentType": {
+          "const": "evaluation-run-fragment",
+          "default": "evaluation-run-fragment",
+          "title": "Documenttype",
+          "type": "string"
+        },
+        "executionRefs": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+            "type": "string"
+          },
+          "title": "Executionrefs",
+          "type": "array"
+        },
+        "fragmentId": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "title": "Fragmentid",
+          "type": "string"
+        },
+        "inputManifestDigest": {
+          "pattern": "^sha256:[a-f0-9]{64}$",
+          "title": "Inputmanifestdigest",
+          "type": "string"
+        },
+        "observationRefs": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+            "type": "string"
+          },
+          "title": "Observationrefs",
+          "type": "array"
+        },
+        "oracleResultRefs": {
+          "default": [],
+          "items": {
+            "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+            "type": "string"
+          },
+          "title": "Oracleresultrefs",
+          "type": "array"
+        },
+        "schemaVersion": {
+          "const": "0.2.0",
+          "default": "0.2.0",
+          "title": "Schemaversion",
+          "type": "string"
+        },
+        "stageRef": {
+          "$ref": "#/$defs/StageId"
+        }
+      },
+      "required": [
+        "documentType",
+        "schemaVersion",
+        "fragmentId",
+        "stageRef",
+        "inputManifestDigest",
+        "executionRefs",
+        "observationRefs"
+      ],
+      "title": "EvaluationRunFragmentDocument",
+      "type": "object"
+    },
+    "EvidenceAdmission": {
+      "additionalProperties": false,
+      "properties": {
+        "admitted": {
+          "title": "Admitted",
+          "type": "boolean"
+        },
+        "assignedReliability": {
+          "$ref": "#/$defs/Reliability"
+        },
+        "catalogRuleRef": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "title": "Catalogruleref",
+          "type": "string"
+        },
+        "claimRef": {
+          "pattern": "^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$",
+          "title": "Claimref",
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "observationRef": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "title": "Observationref",
+          "type": "string"
+        },
+        "oracleResultRef": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Oracleresultref"
+        },
+        "rejectionReason": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rejectionreason"
+        }
+      },
+      "required": [
+        "id",
+        "claimRef",
+        "observationRef",
+        "catalogRuleRef",
+        "assignedReliability",
+        "admitted"
+      ],
+      "title": "EvidenceAdmission",
+      "type": "object"
+    },
+    "ExecutionInvocation": {
+      "additionalProperties": false,
+      "properties": {
+        "argv": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Argv",
+          "type": "array"
+        },
+        "environmentAllowlist": {
+          "default": [],
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Environmentallowlist",
+          "type": "array"
+        },
+        "inputArtifactRefs": {
+          "default": [],
+          "items": {
+            "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+            "type": "string"
+          },
+          "title": "Inputartifactrefs",
+          "type": "array"
+        },
+        "workingDirectoryRef": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "title": "Workingdirectoryref",
+          "type": "string"
+        }
+      },
+      "required": [
+        "argv",
+        "workingDirectoryRef"
+      ],
+      "title": "ExecutionInvocation",
+      "type": "object"
+    },
+    "ExecutionRecord": {
+      "additionalProperties": false,
+      "properties": {
+        "adapterRef": {
+          "$ref": "#/$defs/ContentRef"
+        },
+        "caseRefs": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+            "type": "string"
+          },
+          "title": "Caserefs",
+          "type": "array"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "inputManifestDigest": {
+          "pattern": "^sha256:[a-f0-9]{64}$",
+          "title": "Inputmanifestdigest",
+          "type": "string"
+        },
+        "invocation": {
+          "$ref": "#/$defs/ExecutionInvocation"
+        },
+        "limitations": {
+          "default": [],
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Limitations",
+          "type": "array"
+        },
+        "normalizerRef": {
+          "$ref": "#/$defs/ContentRef"
+        },
+        "rawArtifactRefs": {
+          "items": {
+            "$ref": "#/$defs/ContentRef"
+          },
+          "title": "Rawartifactrefs",
+          "type": "array"
+        },
+        "result": {
+          "$ref": "#/$defs/ExecutionResult"
+        },
+        "stageRef": {
+          "$ref": "#/$defs/StageId"
+        }
+      },
+      "required": [
+        "id",
+        "stageRef",
+        "caseRefs",
+        "adapterRef",
+        "normalizerRef",
+        "inputManifestDigest",
+        "invocation",
+        "result",
+        "rawArtifactRefs"
+      ],
+      "title": "ExecutionRecord",
+      "type": "object"
+    },
+    "ExecutionResult": {
+      "additionalProperties": false,
+      "properties": {
+        "durationMs": {
+          "minimum": 0,
+          "title": "Durationms",
+          "type": "integer"
+        },
+        "exitCode": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Exitcode"
+        },
+        "signal": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Signal"
+        },
+        "status": {
+          "$ref": "#/$defs/ExecutionStatus"
+        }
+      },
+      "required": [
+        "status",
+        "durationMs"
+      ],
+      "title": "ExecutionResult",
+      "type": "object"
+    },
+    "ExecutionStatus": {
+      "enum": [
+        "completed",
+        "failed",
+        "timed-out",
+        "cancelled"
+      ],
+      "title": "ExecutionStatus",
+      "type": "string"
+    },
+    "FixtureFamily": {
+      "enum": [
+        "positive",
+        "negative",
+        "boundary",
+        "adversarial",
+        "compatibility",
+        "regression"
+      ],
+      "title": "FixtureFamily",
+      "type": "string"
+    },
+    "FixtureRef": {
+      "additionalProperties": false,
+      "properties": {
+        "claimRefs": {
+          "items": {
+            "pattern": "^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$",
+            "type": "string"
+          },
+          "title": "Claimrefs",
+          "type": "array"
+        },
+        "dataRef": {
+          "$ref": "#/$defs/ContentRef"
+        },
+        "family": {
+          "$ref": "#/$defs/FixtureFamily"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "title": "Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "family",
+        "dataRef",
+        "claimRefs"
+      ],
+      "title": "FixtureRef",
+      "type": "object"
+    },
+    "GateDefinition": {
+      "additionalProperties": false,
+      "properties": {
+        "assessedClaimRefs": {
+          "items": {
+            "pattern": "^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$",
+            "type": "string"
+          },
+          "title": "Assessedclaimrefs",
+          "type": "array"
+        },
+        "command": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Command",
+          "type": "array"
+        },
+        "configurationRef": {
+          "$ref": "#/$defs/ContentRef"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "limitations": {
+          "default": [],
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Limitations",
+          "type": "array"
+        },
+        "stage": {
+          "$ref": "#/$defs/StageId"
+        },
+        "toolRef": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "title": "Toolref",
+          "type": "string"
+        },
+        "unmappedDiagnostics": {
+          "const": "informational",
+          "default": "informational",
+          "title": "Unmappeddiagnostics",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "stage",
+        "toolRef",
+        "command",
+        "configurationRef",
+        "assessedClaimRefs"
+      ],
+      "title": "GateDefinition",
+      "type": "object"
+    },
+    "GenerationPolicyClaim": {
+      "additionalProperties": false,
+      "properties": {
+        "applicability": {
+          "$ref": "#/$defs/Applicability"
+        },
+        "assessedBy": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ClaimAssessment"
+          },
+          "title": "Assessedby",
+          "type": "array"
+        },
+        "authorityRefs": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+            "type": "string"
+          },
+          "title": "Authorityrefs",
+          "type": "array"
+        },
+        "id": {
+          "pattern": "^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "invariants": {
+          "default": [],
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Invariants",
+          "type": "array"
+        },
+        "nonClaims": {
+          "default": [],
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Nonclaims",
+          "type": "array"
+        },
+        "obligation": {
+          "$ref": "#/$defs/PolicyObligation"
+        },
+        "statement": {
+          "minLength": 1,
+          "title": "Statement",
+          "type": "string"
+        },
+        "title": {
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "statement",
+        "obligation",
+        "authorityRefs",
+        "applicability"
+      ],
+      "title": "GenerationPolicyClaim",
+      "type": "object"
+    },
+    "GenerationPolicyProfileDocument": {
+      "additionalProperties": false,
+      "properties": {
+        "authorityPrecedence": {
+          "items": {
+            "$ref": "#/$defs/AuthorityClass"
+          },
+          "minItems": 5,
+          "title": "Authorityprecedence",
+          "type": "array",
+          "uniqueItems": true
+        },
+        "authoritySources": {
+          "items": {
+            "$ref": "#/$defs/AuthoritySource"
+          },
+          "minItems": 1,
+          "title": "Authoritysources",
+          "type": "array"
+        },
+        "claims": {
+          "items": {
+            "$ref": "#/$defs/GenerationPolicyClaim"
+          },
+          "minItems": 1,
+          "title": "Claims",
+          "type": "array"
+        },
+        "completeness": {
+          "const": "declared-claims-only",
+          "default": "declared-claims-only",
+          "title": "Completeness",
+          "type": "string"
+        },
+        "documentType": {
+          "const": "generation-policy-profile",
+          "default": "generation-policy-profile",
+          "title": "Documenttype",
+          "type": "string"
+        },
+        "gates": {
+          "items": {
+            "$ref": "#/$defs/GateDefinition"
+          },
+          "minItems": 1,
+          "title": "Gates",
+          "type": "array"
+        },
+        "metadata": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Metadata",
+          "type": "object"
+        },
+        "optionalProfiles": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/OptionalProfileRef"
+          },
+          "title": "Optionalprofiles",
+          "type": "array"
+        },
+        "pepTreatment": {
+          "const": "versioned-rationale-unless-canonical",
+          "default": "versioned-rationale-unless-canonical",
+          "title": "Peptreatment",
+          "type": "string"
+        },
+        "profileId": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "title": "Profileid",
+          "type": "string"
+        },
+        "profileStatus": {
+          "$ref": "#/$defs/ProfileStatus"
+        },
+        "profileVersion": {
+          "minLength": 1,
+          "title": "Profileversion",
+          "type": "string"
+        },
+        "schemaVersion": {
+          "const": "0.2.0",
+          "default": "0.2.0",
+          "title": "Schemaversion",
+          "type": "string"
+        },
+        "target": {
+          "$ref": "#/$defs/GenerationTarget"
+        }
+      },
+      "required": [
+        "documentType",
+        "schemaVersion",
+        "profileId",
+        "profileVersion",
+        "profileStatus",
+        "target",
+        "authorityPrecedence",
+        "authoritySources",
+        "claims",
+        "gates"
+      ],
+      "title": "GenerationPolicyProfileDocument",
+      "type": "object"
+    },
+    "GenerationTarget": {
+      "additionalProperties": false,
+      "properties": {
+        "implementation": {
+          "default": "any",
+          "enum": [
+            "any",
+            "cpython"
+          ],
+          "title": "Implementation",
+          "type": "string"
+        },
+        "platforms": {
+          "default": [],
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Platforms",
+          "type": "array"
+        },
+        "python": {
+          "const": "3.14",
+          "default": "3.14",
+          "title": "Python",
+          "type": "string"
+        },
+        "requiresPython": {
+          "const": ">=3.14,<3.15",
+          "default": ">=3.14,<3.15",
+          "title": "Requirespython",
+          "type": "string"
+        }
+      },
+      "required": [
+        "python",
+        "requiresPython",
+        "implementation"
+      ],
+      "title": "GenerationTarget",
+      "type": "object"
+    },
+    "HypothesisProvenance": {
+      "additionalProperties": false,
+      "properties": {
+        "deadlineMs": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Deadlinems"
+        },
+        "derandomize": {
+          "title": "Derandomize",
+          "type": "boolean"
+        },
+        "environmentRef": {
+          "$ref": "#/$defs/ContentRef"
+        },
+        "maxExamples": {
+          "exclusiveMinimum": 0,
+          "title": "Maxexamples",
+          "type": "integer"
+        },
+        "phases": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Phases",
+          "type": "array"
+        },
+        "profileName": {
+          "minLength": 1,
+          "title": "Profilename",
+          "type": "string"
+        },
+        "seed": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Seed"
+        },
+        "strategyDigest": {
+          "pattern": "^sha256:[a-f0-9]{64}$",
+          "title": "Strategydigest",
+          "type": "string"
+        },
+        "strategyId": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "title": "Strategyid",
+          "type": "string"
+        },
+        "version": {
+          "minLength": 1,
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "version",
+        "profileName",
+        "strategyId",
+        "strategyDigest",
+        "maxExamples",
+        "derandomize",
+        "phases",
+        "environmentRef"
+      ],
+      "title": "HypothesisProvenance",
+      "type": "object"
+    },
+    "ItemVerdict": {
+      "additionalProperties": false,
+      "properties": {
+        "admittedEvidenceRefs": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+            "type": "string"
+          },
+          "title": "Admittedevidencerefs",
+          "type": "array"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "itemRef": {
+          "pattern": "^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$",
+          "title": "Itemref",
+          "type": "string"
+        },
+        "missingEvidence": {
+          "default": [],
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Missingevidence",
+          "type": "array"
+        },
+        "rationale": {
+          "minLength": 1,
+          "title": "Rationale",
+          "type": "string"
+        },
+        "rejectedEvidenceRefs": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+            "type": "string"
+          },
+          "title": "Rejectedevidencerefs",
+          "type": "array"
+        },
+        "subjectRef": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "title": "Subjectref",
+          "type": "string"
+        },
+        "underlyingVerdict": {
+          "$ref": "#/$defs/UnderlyingVerdict"
+        },
+        "verdict": {
+          "$ref": "#/$defs/Verdict"
+        },
+        "waiver": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Waiver"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "verdict": {
+                "const": "waived"
+              }
+            },
+            "required": [
+              "verdict"
+            ]
+          },
+          "then": {
+            "properties": {
+              "waiver": {
+                "$ref": "#/$defs/Waiver"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "waiver": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ],
+      "required": [
+        "id",
+        "itemRef",
+        "subjectRef",
+        "verdict",
+        "underlyingVerdict",
+        "admittedEvidenceRefs",
+        "rejectedEvidenceRefs",
+        "rationale"
+      ],
+      "title": "ItemVerdict",
+      "type": "object"
+    },
+    "JsonValue": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "integer"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "items": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "type": "array"
+        },
+        {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "Observation": {
+      "additionalProperties": false,
+      "properties": {
+        "applicabilityPredicateRef": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Applicabilitypredicateref"
+        },
+        "caseRef": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "title": "Caseref",
+          "type": "string"
+        },
+        "counterexampleRef": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Counterexampleref"
+        },
+        "executionRef": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "title": "Executionref",
+          "type": "string"
+        },
+        "fixtureRef": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "title": "Fixtureref",
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "itemRef": {
+          "pattern": "^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$",
+          "title": "Itemref",
+          "type": "string"
+        },
+        "location": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SourceLocation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "normalizedCode": {
+          "minLength": 1,
+          "title": "Normalizedcode",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/JsonValue",
+          "default": null
+        },
+        "probeRef": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "title": "Proberef",
+          "type": "string"
+        },
+        "skipReason": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Skipreason"
+        },
+        "source": {
+          "minLength": 1,
+          "title": "Source",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/ObservationStatus"
+        },
+        "subjectRef": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "title": "Subjectref",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "caseRef",
+        "itemRef",
+        "subjectRef",
+        "fixtureRef",
+        "probeRef",
+        "executionRef",
+        "source",
+        "status",
+        "normalizedCode"
+      ],
+      "title": "Observation",
+      "type": "object"
+    },
+    "ObservationStatus": {
+      "enum": [
+        "passed",
+        "failed",
+        "unavailable",
+        "unsupported",
+        "timed-out",
+        "error",
+        "skipped",
+        "informational"
+      ],
+      "title": "ObservationStatus",
+      "type": "string"
+    },
+    "OptionalProfileRef": {
+      "additionalProperties": false,
+      "properties": {
+        "digest": {
+          "pattern": "^sha256:[a-f0-9]{64}$",
+          "title": "Digest",
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "selected": {
+          "default": false,
+          "title": "Selected",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "digest"
+      ],
+      "title": "OptionalProfileRef",
+      "type": "object"
+    },
+    "OracleResult": {
+      "additionalProperties": false,
+      "properties": {
+        "claimRef": {
+          "pattern": "^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$",
+          "title": "Claimref",
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "observationRefs": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+            "type": "string"
+          },
+          "title": "Observationrefs",
+          "type": "array"
+        },
+        "oracleRef": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "title": "Oracleref",
+          "type": "string"
+        },
+        "rationaleCode": {
+          "minLength": 1,
+          "title": "Rationalecode",
+          "type": "string"
+        },
+        "result": {
+          "$ref": "#/$defs/OracleResultStatus"
+        },
+        "subjectRef": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "title": "Subjectref",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "claimRef",
+        "subjectRef",
+        "oracleRef",
+        "observationRefs",
+        "result",
+        "rationaleCode"
+      ],
+      "title": "OracleResult",
+      "type": "object"
+    },
+    "OracleResultStatus": {
+      "enum": [
+        "satisfied",
+        "refuted",
+        "insufficient-evidence"
+      ],
+      "title": "OracleResultStatus",
+      "type": "string"
+    },
+    "PolicyLevel": {
+      "enum": [
+        "required",
+        "preferred",
+        "conditional",
+        "forbidden"
+      ],
+      "title": "PolicyLevel",
+      "type": "string"
+    },
+    "PolicyObligation": {
+      "additionalProperties": false,
+      "properties": {
+        "conditionRef": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Conditionref"
+        },
+        "level": {
+          "$ref": "#/$defs/PolicyLevel"
+        }
+      },
+      "required": [
+        "level"
+      ],
+      "title": "PolicyObligation",
+      "type": "object"
+    },
+    "ProbeInvocation": {
+      "additionalProperties": false,
+      "properties": {
+        "configuration": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Configuration",
+          "type": "object"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "probeRef": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "title": "Proberef",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "probeRef"
+      ],
+      "title": "ProbeInvocation",
+      "type": "object"
+    },
+    "ProfileStatus": {
+      "enum": [
+        "prototype",
+        "adopted",
+        "deprecated"
+      ],
+      "title": "ProfileStatus",
+      "type": "string"
+    },
+    "QualificationReportDocument": {
+      "additionalProperties": false,
+      "properties": {
+        "admissions": {
+          "items": {
+            "$ref": "#/$defs/EvidenceAdmission"
+          },
+          "title": "Admissions",
+          "type": "array"
+        },
+        "documentType": {
+          "const": "qualification-report",
+          "default": "qualification-report",
+          "title": "Documenttype",
+          "type": "string"
+        },
+        "generatedAt": {
+          "format": "date-time",
+          "title": "Generatedat",
+          "type": "string"
+        },
+        "itemVerdicts": {
+          "items": {
+            "$ref": "#/$defs/ItemVerdict"
+          },
+          "minItems": 1,
+          "title": "Itemverdicts",
+          "type": "array"
+        },
+        "profileRef": {
+          "$ref": "#/$defs/ContentRef"
+        },
+        "reportId": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "title": "Reportid",
+          "type": "string"
+        },
+        "runRef": {
+          "$ref": "#/$defs/ContentRef"
+        },
+        "schemaVersion": {
+          "const": "0.2.0",
+          "default": "0.2.0",
+          "title": "Schemaversion",
+          "type": "string"
+        },
+        "selectedOptionalProfiles": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ContentRef"
+          },
+          "title": "Selectedoptionalprofiles",
+          "type": "array"
+        },
+        "summary": {
+          "$ref": "#/$defs/VerdictCounts"
+        }
+      },
+      "required": [
+        "documentType",
+        "schemaVersion",
+        "reportId",
+        "runRef",
+        "profileRef",
+        "generatedAt",
+        "admissions",
+        "summary",
+        "itemVerdicts"
+      ],
+      "title": "QualificationReportDocument",
+      "type": "object"
+    },
+    "RegressionFixtureDocument": {
+      "additionalProperties": false,
+      "properties": {
+        "admittedByReportRef": {
+          "$ref": "#/$defs/ContentRef"
+        },
+        "documentType": {
+          "const": "regression-fixture",
+          "default": "regression-fixture",
+          "title": "Documenttype",
+          "type": "string"
+        },
+        "fixture": {
+          "$ref": "#/$defs/FixtureRef"
+        },
+        "promotedFrom": {
+          "$ref": "#/$defs/ContentRef"
+        },
+        "schemaVersion": {
+          "const": "0.2.0",
+          "default": "0.2.0",
+          "title": "Schemaversion",
+          "type": "string"
+        }
+      },
+      "required": [
+        "documentType",
+        "schemaVersion",
+        "fixture",
+        "promotedFrom",
+        "admittedByReportRef"
+      ],
+      "title": "RegressionFixtureDocument",
+      "type": "object"
+    },
+    "Reliability": {
+      "enum": [
+        "R0",
+        "R1",
+        "R2",
+        "R3",
+        "R4"
+      ],
+      "title": "Reliability",
+      "type": "string"
+    },
+    "SandboxProfile": {
+      "additionalProperties": false,
+      "properties": {
+        "environmentAllowlist": {
+          "default": [],
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Environmentallowlist",
+          "type": "array"
+        },
+        "fileSizeLimitBytes": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Filesizelimitbytes"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "inputEncoding": {
+          "const": "utf-8",
+          "default": "utf-8",
+          "title": "Inputencoding",
+          "type": "string"
+        },
+        "isolatedWorkingDirectory": {
+          "const": true,
+          "default": true,
+          "title": "Isolatedworkingdirectory",
+          "type": "boolean"
+        },
+        "memoryLimitBytes": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Memorylimitbytes"
+        },
+        "network": {
+          "default": "disabled",
+          "enum": [
+            "disabled",
+            "allowlisted"
+          ],
+          "title": "Network",
+          "type": "string"
+        },
+        "outputNormalization": {
+          "minLength": 1,
+          "title": "Outputnormalization",
+          "type": "string"
+        },
+        "processLimit": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Processlimit"
+        },
+        "readablePaths": {
+          "default": [],
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Readablepaths",
+          "type": "array"
+        },
+        "timeoutSeconds": {
+          "exclusiveMinimum": 0,
+          "title": "Timeoutseconds",
+          "type": "integer"
+        },
+        "writablePaths": {
+          "default": [],
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Writablepaths",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "timeoutSeconds",
+        "outputNormalization"
+      ],
+      "title": "SandboxProfile",
+      "type": "object"
+    },
+    "SourceLocation": {
+      "additionalProperties": false,
+      "properties": {
+        "column": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Column"
+        },
+        "endColumn": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Endcolumn"
+        },
+        "endLine": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Endline"
+        },
+        "line": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Line"
+        },
+        "uri": {
+          "format": "uri-reference",
+          "minLength": 1,
+          "title": "Uri",
+          "type": "string"
+        }
+      },
+      "required": [
+        "uri"
+      ],
+      "title": "SourceLocation",
+      "type": "object"
+    },
+    "StageDefinition": {
+      "additionalProperties": false,
+      "properties": {
+        "dependsOn": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/StageId"
+          },
+          "title": "Dependson",
+          "type": "array"
+        },
+        "id": {
+          "$ref": "#/$defs/StageId"
+        },
+        "kind": {
+          "$ref": "#/$defs/StageKind"
+        },
+        "stateGuards": {
+          "default": [],
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Stateguards",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "kind"
+      ],
+      "title": "StageDefinition",
+      "type": "object"
+    },
+    "StageId": {
+      "enum": [
+        "catalog-validation",
+        "subject-discovery",
+        "syntax-format",
+        "typing",
+        "architecture",
+        "boundary-contracts",
+        "behavioral-examples",
+        "generative-properties",
+        "runtime-probes",
+        "symbolic",
+        "evidence-normalization",
+        "qualification"
+      ],
+      "title": "StageId",
+      "type": "string"
+    },
+    "StageKind": {
+      "enum": [
+        "validation",
+        "discovery",
+        "diagnostic",
+        "evaluation",
+        "optional-evaluation",
+        "normalization",
+        "judgment"
+      ],
+      "title": "StageKind",
+      "type": "string"
+    },
+    "StageRegistryDocument": {
+      "additionalProperties": false,
+      "properties": {
+        "documentType": {
+          "const": "stage-registry",
+          "default": "stage-registry",
+          "title": "Documenttype",
+          "type": "string"
+        },
+        "groups": {
+          "patternProperties": {
+            "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$": {
+              "items": {
+                "$ref": "#/$defs/StageId"
+              },
+              "type": "array"
+            }
+          },
+          "title": "Groups",
+          "type": "object"
+        },
+        "registryId": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "title": "Registryid",
+          "type": "string"
+        },
+        "schemaVersion": {
+          "const": "0.2.0",
+          "default": "0.2.0",
+          "title": "Schemaversion",
+          "type": "string"
+        },
+        "stages": {
+          "items": {
+            "$ref": "#/$defs/StageDefinition"
+          },
+          "minItems": 1,
+          "title": "Stages",
+          "type": "array"
+        }
+      },
+      "required": [
+        "documentType",
+        "schemaVersion",
+        "registryId",
+        "stages"
+      ],
+      "title": "StageRegistryDocument",
+      "type": "object"
+    },
+    "SubjectKind": {
+      "enum": [
+        "repository",
+        "package",
+        "module",
+        "class",
+        "model",
+        "callable",
+        "higher-order-callable",
+        "orchestrator",
+        "workflow",
+        "adapter",
+        "bootstrap",
+        "artifact",
+        "configuration"
+      ],
+      "title": "SubjectKind",
+      "type": "string"
+    },
+    "SubjectRef": {
+      "additionalProperties": false,
+      "properties": {
+        "digest": {
+          "pattern": "^sha256:[a-f0-9]{64}$",
+          "title": "Digest",
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/SubjectKind"
+        },
+        "location": {
+          "format": "uri-reference",
+          "minLength": 1,
+          "title": "Location",
+          "type": "string"
+        },
+        "qualname": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Qualname"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "location",
+        "digest"
+      ],
+      "title": "SubjectRef",
+      "type": "object"
+    },
+    "ToolLock": {
+      "additionalProperties": false,
+      "properties": {
+        "assessorKind": {
+          "$ref": "#/$defs/AssessorKind"
+        },
+        "authority": {
+          "const": "assessor",
+          "default": "assessor",
+          "title": "Authority",
+          "type": "string"
+        },
+        "configurationRef": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ContentRef"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "distributionRef": {
+          "$ref": "#/$defs/ContentRef"
+        },
+        "executableDigest": {
+          "anyOf": [
+            {
+              "pattern": "^sha256:[a-f0-9]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Executabledigest"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "limitations": {
+          "default": [],
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Limitations",
+          "type": "array"
+        },
+        "pythonTarget": {
+          "const": "3.14",
+          "default": "3.14",
+          "title": "Pythontarget",
+          "type": "string"
+        },
+        "role": {
+          "minLength": 1,
+          "title": "Role",
+          "type": "string"
+        },
+        "version": {
+          "minLength": 1,
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "assessorKind",
+        "role",
+        "version",
+        "distributionRef"
+      ],
+      "title": "ToolLock",
+      "type": "object"
+    },
+    "ToolchainLockDocument": {
+      "additionalProperties": false,
+      "properties": {
+        "ansibleCollections": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ContentRef"
+          },
+          "title": "Ansiblecollections",
+          "type": "array"
+        },
+        "documentType": {
+          "const": "toolchain-lock",
+          "default": "toolchain-lock",
+          "title": "Documenttype",
+          "type": "string"
+        },
+        "executionEnvironmentImages": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ContentRef"
+          },
+          "title": "Executionenvironmentimages",
+          "type": "array"
+        },
+        "inventories": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ContentRef"
+          },
+          "title": "Inventories",
+          "type": "array"
+        },
+        "lockId": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "title": "Lockid",
+          "type": "string"
+        },
+        "playbooks": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ContentRef"
+          },
+          "title": "Playbooks",
+          "type": "array"
+        },
+        "python": {
+          "$ref": "#/$defs/ToolLock"
+        },
+        "schemaVersion": {
+          "const": "0.2.0",
+          "default": "0.2.0",
+          "title": "Schemaversion",
+          "type": "string"
+        },
+        "tools": {
+          "items": {
+            "$ref": "#/$defs/ToolLock"
+          },
+          "minItems": 1,
+          "title": "Tools",
+          "type": "array"
+        }
+      },
+      "required": [
+        "documentType",
+        "schemaVersion",
+        "lockId",
+        "python",
+        "tools"
+      ],
+      "title": "ToolchainLockDocument",
+      "type": "object"
+    },
+    "UnderlyingVerdict": {
+      "enum": [
+        "pass",
+        "fail",
+        "inconclusive",
+        "not-applicable"
+      ],
+      "title": "UnderlyingVerdict",
+      "type": "string"
+    },
+    "Verdict": {
+      "enum": [
+        "pass",
+        "fail",
+        "inconclusive",
+        "not-applicable",
+        "waived"
+      ],
+      "title": "Verdict",
+      "type": "string"
+    },
+    "VerdictCounts": {
+      "additionalProperties": false,
+      "properties": {
+        "failed": {
+          "minimum": 0,
+          "title": "Failed",
+          "type": "integer"
+        },
+        "inconclusive": {
+          "minimum": 0,
+          "title": "Inconclusive",
+          "type": "integer"
+        },
+        "notApplicable": {
+          "minimum": 0,
+          "title": "Notapplicable",
+          "type": "integer"
+        },
+        "passed": {
+          "minimum": 0,
+          "title": "Passed",
+          "type": "integer"
+        },
+        "waived": {
+          "minimum": 0,
+          "title": "Waived",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "passed",
+        "failed",
+        "inconclusive",
+        "notApplicable",
+        "waived"
+      ],
+      "title": "VerdictCounts",
+      "type": "object"
+    },
+    "Waiver": {
+      "additionalProperties": false,
+      "properties": {
+        "authorizationRef": {
+          "$ref": "#/$defs/ContentRef"
+        },
+        "expiresAt": {
+          "format": "date-time",
+          "title": "Expiresat",
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "owner": {
+          "minLength": 1,
+          "title": "Owner",
+          "type": "string"
+        },
+        "rationale": {
+          "minLength": 1,
+          "title": "Rationale",
+          "type": "string"
+        },
+        "scope": {
+          "items": {
+            "pattern": "^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$",
+            "type": "string"
+          },
+          "title": "Scope",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "owner",
+        "rationale",
+        "expiresAt",
+        "scope",
+        "authorizationRef"
+      ],
+      "title": "Waiver",
+      "type": "object"
+    }
+  },
+  "$id": "urn:python-policy-ppf:generation-policy:0.2.0",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Closed document model for a Python 3.14 generation-policy profile, evaluation plans, immutable observations, evidence admission, and qualification.",
+  "discriminator": {
+    "mapping": {
+      "counterexample": "#/$defs/CounterexampleDocument",
+      "evaluation-input-manifest": "#/$defs/EvaluationInputManifestDocument",
+      "evaluation-plan": "#/$defs/EvaluationPlanDocument",
+      "evaluation-run": "#/$defs/EvaluationRunDocument",
+      "evaluation-run-fragment": "#/$defs/EvaluationRunFragmentDocument",
+      "generation-policy-profile": "#/$defs/GenerationPolicyProfileDocument",
+      "qualification-report": "#/$defs/QualificationReportDocument",
+      "regression-fixture": "#/$defs/RegressionFixtureDocument",
+      "stage-registry": "#/$defs/StageRegistryDocument",
+      "toolchain-lock": "#/$defs/ToolchainLockDocument"
+    },
+    "propertyName": "documentType"
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/GenerationPolicyProfileDocument"
+    },
+    {
+      "$ref": "#/$defs/StageRegistryDocument"
+    },
+    {
+      "$ref": "#/$defs/ToolchainLockDocument"
+    },
+    {
+      "$ref": "#/$defs/EvaluationPlanDocument"
+    },
+    {
+      "$ref": "#/$defs/EvaluationInputManifestDocument"
+    },
+    {
+      "$ref": "#/$defs/EvaluationRunFragmentDocument"
+    },
+    {
+      "$ref": "#/$defs/EvaluationRunDocument"
+    },
+    {
+      "$ref": "#/$defs/QualificationReportDocument"
+    },
+    {
+      "$ref": "#/$defs/CounterexampleDocument"
+    },
+    {
+      "$ref": "#/$defs/RegressionFixtureDocument"
+    }
+  ],
+  "title": "Python 3.14 Generation-Policy PPF Contract"
+}

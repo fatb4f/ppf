@@ -1,0 +1,109 @@
+{
+  "documentType": "shaping-profile-registry",
+  "schemaVersion": "0.2.0",
+  "registryId": "default-semantic-shapes",
+  "profiles": [
+    {
+      "profileId": "pure-operation",
+      "semanticObligation": "Perform a deterministic typed transformation without owned lifecycle state.",
+      "operationRoles": [
+        "extractor",
+        "validator",
+        "classifier",
+        "constructor",
+        "transformer"
+      ],
+      "primaryEligible": true,
+      "allowedFacetRefs": [
+        "higher-order-binding",
+        "strict-parallel-consumption"
+      ]
+    },
+    {
+      "profileId": "state-transition",
+      "semanticObligation": "Apply an explicit state and event transition while enforcing lifecycle invariants.",
+      "operationRoles": [
+        "reducer"
+      ],
+      "primaryEligible": true,
+      "allowedFacetRefs": [
+        "stateful-lifecycle",
+        "higher-order-binding",
+        "free-threading-portability"
+      ]
+    },
+    {
+      "profileId": "use-case-orchestrator",
+      "semanticObligation": "Coordinate named operations in application-semantic order.",
+      "operationRoles": [
+        "orchestrator"
+      ],
+      "primaryEligible": true,
+      "requiredProfileRefs": [
+        "state-transition",
+        "effect-port"
+      ],
+      "allowedFacetRefs": [
+        "stateful-lifecycle",
+        "external-read-effect"
+      ]
+    },
+    {
+      "profileId": "effect-port",
+      "semanticObligation": "Declare an external capability behind a typed interface.",
+      "operationRoles": [
+        "port"
+      ],
+      "primaryEligible": false,
+      "allowedFacetRefs": [
+        "external-read-effect",
+        "external-write-effect",
+        "interpreter-isolation"
+      ]
+    },
+    {
+      "profileId": "artifact-generator",
+      "semanticObligation": "Transform declared source inputs into a deterministic generated artifact with provenance.",
+      "operationRoles": [
+        "generator"
+      ],
+      "primaryEligible": true,
+      "allowedFacetRefs": [
+        "generated-artifact",
+        "python-3.14-annotations"
+      ]
+    }
+  ],
+  "facets": [
+    {
+      "facetId": "stateful-lifecycle",
+      "semanticObligation": "Lifecycle ownership and state transitions are explicit.",
+      "requiredProfileRefs": [
+        "state-transition"
+      ]
+    },
+    {
+      "facetId": "external-read-effect",
+      "semanticObligation": "External reads occur through an explicit effect port.",
+      "requiredProfileRefs": [
+        "effect-port"
+      ]
+    },
+    {
+      "facetId": "higher-order-binding",
+      "semanticObligation": "Compatible operations may be composed while retaining explicit identity and provenance."
+    },
+    {
+      "facetId": "python-3.14-annotations",
+      "semanticObligation": "Deferred annotations are resolved under a declared Python 3.14 policy."
+    },
+    {
+      "facetId": "generated-artifact",
+      "semanticObligation": "Generated outputs bind their inputs, generator, shaping decision, and annotation policy.",
+      "requiredProfileRefs": [
+        "artifact-generator"
+      ]
+    }
+  ],
+  "conflicts": []
+}

@@ -1,0 +1,112 @@
+{
+  "documentType": "shaping-implementation-binding",
+  "schemaVersion": "0.2.0",
+  "bindingId": "python-3.14-default-shaping",
+  "policyRef": {
+    "id": "default-operation-shaping",
+    "digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+    "uri": "https://example.invalid/default-operation-shaping.json",
+    "mediaType": "application/json"
+  },
+  "registryRef": {
+    "id": "default-semantic-shapes",
+    "digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "uri": "https://example.invalid/default-semantic-shapes.json",
+    "mediaType": "application/json"
+  },
+  "higherOrderPolicy": {
+    "higherOrderBinding": "allowed-when-signatures-compose",
+    "fluentPipelines": "discouraged",
+    "bindingIdentity": "explicit",
+    "bindingProvenance": "required",
+    "allowedBindingKinds": [
+      "direct-call",
+      "closure",
+      "partial",
+      "partial-with-placeholder",
+      "handler-registry",
+      "callable-object",
+      "decorator"
+    ],
+    "signatureResolutionPolicyRef": "python-3.14-callable-resolution"
+  },
+  "annotationPolicies": {
+    "python-3.14-default": {
+      "evaluation": "deferred",
+      "resolutionPhase": "binding-qualification",
+      "format": "forward-ref",
+      "preserveAnnotatedMetadata": true,
+      "unresolvedForwardRefs": "defer",
+      "evaluationTrust": "trusted-only"
+    }
+  },
+  "callableInspectionPolicies": [
+    {
+      "policyId": "python-3.14-callable-resolution",
+      "followWrapped": true,
+      "annotationFormat": "forward-ref",
+      "evaluateStrings": false,
+      "resolveBeforeCompatibilityCheck": true
+    }
+  ],
+  "concurrencyPolicy": {
+    "freeThreadedCompatibility": "qualified",
+    "registryMutation": "frozen-before-execution",
+    "mutableCacheSynchronization": "explicit",
+    "gilSerializationAssumed": false
+  },
+  "isolationPolicy": {
+    "multipleInterpreterPortability": "qualified",
+    "registryDefinition": "declarative",
+    "runtimeRegistry": "reconstructible-per-interpreter",
+    "processGlobalIdentityRequired": false
+  },
+  "technologyBindings": [
+    {
+      "id": "python-direct-orchestration",
+      "profileRef": "use-case-orchestrator",
+      "technology": "python",
+      "version": "3.14",
+      "distributionRef": {
+        "id": "cpython-3.14",
+        "digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+        "uri": "https://example.invalid/cpython-3.14",
+        "mediaType": "application/octet-stream"
+      },
+      "bindingKind": "direct-call",
+      "bindingIdentity": "project-rollout",
+      "bindingProvenanceRef": {
+        "id": "project-rollout-source",
+        "digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+        "uri": "https://example.invalid/project-rollout.py",
+        "mediaType": "text/x-python"
+      },
+      "referenceBinding": true
+    }
+  ],
+  "capabilityAssemblyBindings": [
+    {
+      "bindingId": "modern-di-capability-assembly",
+      "facetRef": "capability-assembly",
+      "technology": "modern-di",
+      "version": "1.0",
+      "distributionRef": {
+        "id": "modern-di-distribution",
+        "digest": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+        "uri": "https://example.invalid/modern-di.whl",
+        "mediaType": "application/zip"
+      },
+      "providerKinds": [
+        "factory",
+        "alias",
+        "context"
+      ],
+      "resolverStrategy": "compiled-closure-graph",
+      "resolutionMode": "synchronous-with-async-finalization",
+      "providerDiscovery": "declared-only"
+    }
+  ],
+  "generationPlans": [],
+  "generatedArtifacts": [],
+  "referenceOptimizedDifferentialConformance": true
+}
