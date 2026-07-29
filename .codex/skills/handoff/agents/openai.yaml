@@ -1,0 +1,4 @@
+interface:
+  display_name: "Handoff"
+  short_description: "Create deterministic Codex session handoffs"
+  default_prompt: "Use $handoff to install and run the handoff CLI before ending this session."

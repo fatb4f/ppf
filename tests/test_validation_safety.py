@@ -54,6 +54,7 @@ def test_percent_encoded_traversal_is_rejected(tmp_path: Path) -> None:
     ("uri", "message"),
     [
         ("/absolute.toml", "repository-root-relative"),
+        ("//example.com/pyproject.toml", "must not contain an authority"),
         ("config.toml?revision=1", "must not contain a query"),
         ("missing.toml", "regular file"),
     ],
@@ -198,6 +199,70 @@ def test_missing_and_malformed_uv_lock_are_validation_errors(tmp_path: Path) -> 
         context=ValidationContext(tmp_path),
     )
     assert any("cannot load repository uv.lock" in message for message in _messages(malformed))
+
+
+@pytest.mark.parametrize(
+    ("distribution_metadata", "message"),
+    [
+        (
+            """
+sdist = 1
+wheels = [{ hash = "sha256:680b68338d59e98a0559eeb54d8e5ca33c35b3ec0bef922ec2cc783f2cb28e9a" }]
+""",
+            "sdist entry is missing or malformed",
+        ),
+        (
+            """
+sdist = { hash = "sha256:d27cd7a0d10f9b2db74a41db7f3e050c226da9cf0afb4916a7ab56275ebacbf2" }
+wheels = 1
+""",
+            "wheels list is missing or malformed",
+        ),
+        (
+            """
+sdist = { hash = "sha256:d27cd7a0d10f9b2db74a41db7f3e050c226da9cf0afb4916a7ab56275ebacbf2" }
+wheels = [1]
+""",
+            "wheel entry 0 is malformed",
+        ),
+        (
+            """
+sdist = { hash = 1 }
+wheels = [{ hash = "sha256:680b68338d59e98a0559eeb54d8e5ca33c35b3ec0bef922ec2cc783f2cb28e9a" }]
+""",
+            "sdist hash is missing or malformed",
+        ),
+        (
+            """
+sdist = { hash = "sha256:d27cd7a0d10f9b2db74a41db7f3e050c226da9cf0afb4916a7ab56275ebacbf2" }
+wheels = [{ hash = "not-a-digest" }]
+""",
+            "wheel entry 0 hash is missing or malformed",
+        ),
+    ],
+)
+def test_malformed_uv_lock_distribution_metadata_is_a_validation_error(
+    tmp_path: Path,
+    distribution_metadata: str,
+    message: str,
+) -> None:
+    implementation = (FIXTURES / "valid-implementation-policy-extension.json").read_bytes()
+    (tmp_path / "uv.lock").write_text(
+        f"""
+[[package]]
+name = "datamodel-code-generator"
+version = "0.71.0"
+{distribution_metadata}
+""",
+        encoding="utf-8",
+    )
+
+    result = validate_documents(
+        [(Path("implementation.json"), implementation)],
+        context=ValidationContext(tmp_path),
+    )
+
+    assert any(message in item for item in _messages(result))
 
 
 def test_schema_conformance_identities_and_internal_references() -> None:

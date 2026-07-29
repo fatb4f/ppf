@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import tomllib
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
@@ -23,6 +24,7 @@ from .evaluation import validate_evaluation_semantics
 
 Json = Any
 LoadedDocument = tuple[Path, bytes, dict[str, Json]]
+_SHA256_DIGEST = re.compile(r"sha256:[0-9a-f]{64}")
 
 
 @dataclass(frozen=True)
@@ -146,7 +148,16 @@ def _local_ref_errors(
                 )
             )
             continue
-        if parsed.scheme or parsed.netloc:
+        if parsed.netloc and not parsed.scheme:
+            errors.append(
+                ValidationError(
+                    (*ref_path, "uri"),
+                    f"scheme-less URI must not contain an authority: {uri!r}",
+                    "semantic",
+                )
+            )
+            continue
+        if parsed.scheme:
             continue
         if parsed.query:
             errors.append(
@@ -280,6 +291,62 @@ def _implementation_lock_errors(
             )
         ]
 
+    distribution_rows: list[tuple[str, Json]] = []
+    metadata_errors: list[ValidationError] = []
+    sdist = package.get("sdist")
+    if not isinstance(sdist, dict):
+        metadata_errors.append(
+            ValidationError(
+                ("projection", "generator", "distributionRef", "digest"),
+                "uv.lock sdist entry is missing or malformed",
+                "semantic",
+            )
+        )
+    else:
+        distribution_rows.append(("sdist", sdist))
+
+    wheels = package.get("wheels")
+    if not isinstance(wheels, list):
+        metadata_errors.append(
+            ValidationError(
+                ("projection", "generator", "distributionRef", "digest"),
+                "uv.lock wheels list is missing or malformed",
+                "semantic",
+            )
+        )
+    else:
+        for index, wheel in enumerate(wheels):
+            if not isinstance(wheel, dict):
+                metadata_errors.append(
+                    ValidationError(
+                        ("projection", "generator", "distributionRef", "digest"),
+                        f"uv.lock wheel entry {index} is malformed",
+                        "semantic",
+                    )
+                )
+                continue
+            distribution_rows.append((f"wheel entry {index}", wheel))
+
+    locked_hashes: set[str] = set()
+    for label, row in distribution_rows:
+        distribution_hash = row.get("hash")
+        if (
+            not isinstance(distribution_hash, str)
+            or _SHA256_DIGEST.fullmatch(distribution_hash) is None
+        ):
+            metadata_errors.append(
+                ValidationError(
+                    ("projection", "generator", "distributionRef", "digest"),
+                    f"uv.lock {label} hash is missing or malformed",
+                    "semantic",
+                )
+            )
+            continue
+        locked_hashes.add(distribution_hash)
+
+    if metadata_errors:
+        return metadata_errors
+
     generator = document["projection"]["generator"]
     errors: list[ValidationError] = []
     if generator.get("version") != package.get("version"):
@@ -290,11 +357,6 @@ def _implementation_lock_errors(
                 "semantic",
             )
         )
-    locked_hashes = {
-        item.get("hash")
-        for item in [package.get("sdist", {}), *package.get("wheels", [])]
-        if isinstance(item, dict)
-    }
     distribution = generator["distributionRef"]
     if distribution.get("digest") not in locked_hashes:
         errors.append(
