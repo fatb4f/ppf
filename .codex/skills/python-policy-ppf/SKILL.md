@@ -13,19 +13,20 @@ description: Compile Python 3.14 canonical specifications, project policy, advis
 
 ## Procedure
 
-1. Read `references/python-policy-ppf.schema.json` and `schema-registry.json`. When
-   planning, executing, or reviewing an evaluation workflow, also read
-   `extensions/python-policy-ppf.eval-workflow-extension.schema.json`.
+1. Discover the packaged contract with `ppf-validate catalog`, then disclose
+   only each relevant document schema with `ppf-validate catalog DOCUMENT_TYPE`.
 2. Classify each authority as `canonical-specification`, `versioned-rationale`, `project-policy`, `advisory-reference`, or `diagnostic-documentation`.
 3. Lock every source, configuration, subject, tool distribution, and artifact by SHA-256 digest.
 4. Map each policy claim to applicability, gates, fixtures, probes, oracles, and limitations.
 5. Preserve raw execution evidence separately from normalized observations and evidence admission.
 6. Preserve `pass`, `fail`, `inconclusive`, `not-applicable`, and `waived`, including the underlying verdict.
 7. Emit only document types declared by the official schema or a registered sidecar extension.
-8. Validate related artifacts together so semantic cross-references and content digests are checked:
+8. Validate related artifacts together so semantic cross-references and content
+   digests are checked. Pass `--repository-root` whenever the bundle contains
+   repository-local content or implementation lock checks:
 
 ```bash
-python <skill-directory>/scripts/validate_catalog.py PATH.json [PATH.json ...]
+ppf-validate validate --repository-root REPOSITORY PATH.json [PATH.json ...]
 ```
 
 ## Evaluation workflow

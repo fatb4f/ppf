@@ -1,16 +1,19 @@
 # Python Policy PPF sidecar extensions
 
-The package preserves `references/python-policy-ppf.schema.json` unchanged and
-registers two additive Draft 2020-12 sidecar schemas:
+The installed `ppf.schemas` package preserves the official schema unchanged and
+registers three additive Draft 2020-12 sidecar schemas:
 
-- `extensions/python-policy-ppf.eval-workflow-extension.schema.json`
+- `ppf.schemas/extensions/python-policy-ppf.eval-workflow-extension.schema.json`
   (`urn:python-policy-ppf:extension:evaluation-workflow:0.2.0`)
-- `extensions/python-policy-implementation.extension.schema.json`
+- `ppf.schemas/extensions/python-policy-implementation.extension.schema.json`
   (`urn:python-policy-ppf:implementation-policy-extension:0.2.0`)
+- `ppf.schemas/extensions/python-policy-ppf.schema-conformance-extension.schema.json`
+  (`urn:python-policy-ppf:extension:schema-conformance:0.2.0`)
 
-`extensions/python-policy-ppf.composed.schema.json` accepts an official
-document or either extension document. `schema-registry.json` maps every
-canonical `$id` to its package-relative file.
+The composed schema accepts an official document or a registered extension
+document. The packaged registry maps every canonical `$id` to its
+package-relative resource; the composed discriminator is authoritative for
+document-type targets.
 
 The implementation-policy extension also defines additive shaping documents:
 
@@ -43,7 +46,7 @@ The extensions do not patch official instances with `allOf`. Official document
 types remain closed and authoritative; extension data is carried in separate
 documents linked through official `ContentRef` values.
 
-Validation requires a Draft 2020-12 validator with all resources from
-`schema-registry.json` registered by canonical `$id`. Fixtures under
-`tests/fixtures/` demonstrate every extension document type and the
-implementation-policy document.
+Use `ppf-validate catalog` for progressive discovery and `ppf-validate validate`
+for structural, semantic, bundle, repository, and digest validation. Fixtures
+under `tests/fixtures/` demonstrate the implementation and evaluation
+extensions.

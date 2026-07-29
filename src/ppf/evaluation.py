@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import Counter
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -28,6 +29,12 @@ _CLOSURE_COMPONENTS = {
 }
 
 
+@dataclass(frozen=True)
+class _ExpectedOccurrence:
+    digest: str
+    provenance: str
+
+
 def closure_digest(closure: dict[str, Json]) -> str:
     """Return the normative RFC 8785 SHA-256 digest for an input closure."""
     import hashlib
@@ -36,47 +43,84 @@ def closure_digest(closure: dict[str, Json]) -> str:
 
 
 def _add_expected(
-    expected: dict[tuple[str, str], str],
+    expected: dict[tuple[str, str], list[_ExpectedOccurrence]],
     component: str,
     reference: Json,
+    provenance: str,
 ) -> None:
     if not isinstance(reference, dict):
         return
     identifier = reference.get("id")
     digest = reference.get("digest")
     if isinstance(identifier, str) and isinstance(digest, str):
-        expected[(component, identifier)] = digest
+        expected.setdefault((component, identifier), []).append(
+            _ExpectedOccurrence(digest, provenance)
+        )
 
 
 def _expected_checks(
     binding: dict[str, Json],
     assembly: dict[str, Json],
     documents: dict[str, dict[str, Json]],
-) -> dict[tuple[str, str], str]:
-    expected: dict[tuple[str, str], str] = {}
+) -> dict[tuple[str, str], list[_ExpectedOccurrence]]:
+    expected: dict[tuple[str, str], list[_ExpectedOccurrence]] = {}
+    binding_id = binding.get("bindingId", "<unknown-binding>")
+    assembly_id = assembly.get("assemblyId", "<unknown-assembly>")
     closure = binding.get("closure", {})
     if isinstance(closure, dict):
         for field, component in _CLOSURE_COMPONENTS.items():
-            _add_expected(expected, component, closure.get(field))
+            _add_expected(
+                expected,
+                component,
+                closure.get(field),
+                f"{binding_id}/closure/{field}",
+            )
 
-    _add_expected(expected, "assembler", assembly.get("assemblerRef"))
-    for reference in assembly.get("rawArtifactRefs", []):
-        _add_expected(expected, "raw-artifact", reference)
+    _add_expected(
+        expected,
+        "assembler",
+        assembly.get("assemblerRef"),
+        f"{assembly_id}/assemblerRef",
+    )
+    for index, reference in enumerate(assembly.get("rawArtifactRefs", [])):
+        _add_expected(
+            expected,
+            "raw-artifact",
+            reference,
+            f"{assembly_id}/rawArtifactRefs/{index}",
+        )
 
-    for fragment_binding in assembly.get("fragmentBindings", []):
+    for binding_index, fragment_binding in enumerate(assembly.get("fragmentBindings", [])):
         if not isinstance(fragment_binding, dict):
             continue
         envelope_ref = fragment_binding.get("producerEnvelopeRef", {})
         envelope = documents.get(envelope_ref.get("id"))
         if not isinstance(envelope, dict):
             continue
-        _add_expected(expected, "producer", envelope.get("producerRef"))
-        for execution in envelope.get("executions", []):
+        envelope_id = envelope.get("envelopeId", f"<envelope-{binding_index}>")
+        _add_expected(
+            expected,
+            "producer",
+            envelope.get("producerRef"),
+            f"{envelope_id}/producerRef",
+        )
+        for execution_index, execution in enumerate(envelope.get("executions", [])):
             if not isinstance(execution, dict):
                 continue
-            _add_expected(expected, "invocation", execution.get("invocationRef"))
-            for reference in execution.get("rawArtifactRefs", []):
-                _add_expected(expected, "raw-artifact", reference)
+            prefix = f"{envelope_id}/executions/{execution_index}"
+            _add_expected(
+                expected,
+                "invocation",
+                execution.get("invocationRef"),
+                f"{prefix}/invocationRef",
+            )
+            for artifact_index, reference in enumerate(execution.get("rawArtifactRefs", [])):
+                _add_expected(
+                    expected,
+                    "raw-artifact",
+                    reference,
+                    f"{prefix}/rawArtifactRefs/{artifact_index}",
+                )
     return expected
 
 
@@ -117,11 +161,26 @@ def validate_evaluation_semantics(
         if not isinstance(binding, dict) or not isinstance(assembly, dict):
             continue
 
-        expected = _expected_checks(binding, assembly, documents)
+        occurrences = _expected_checks(binding, assembly, documents)
+        expected: dict[tuple[str, str], str] = {}
+        conflicts: dict[tuple[str, str], list[_ExpectedOccurrence]] = {}
+        for key, values in occurrences.items():
+            digests = {value.digest for value in values}
+            if len(digests) == 1:
+                expected[key] = next(iter(digests))
+            else:
+                conflicts[key] = values
+                detail = ", ".join(f"{value.provenance}={value.digest}" for value in values)
+                errors[path].append(
+                    _semantic(
+                        ("checks",),
+                        f"conflicting expected source occurrences for {key!r}: {detail}",
+                    )
+                )
         checks = integrity.get("checks", [])
         keys: list[tuple[str, str]] = []
         incomplete = False
-        failed = False
+        failed = bool(conflicts)
         for index, check in enumerate(checks):
             if not isinstance(check, dict):
                 continue
@@ -133,7 +192,15 @@ def validate_evaluation_semantics(
             declared_expected = check.get("expectedDigest")
             actual_digest = check.get("actualDigest")
             status = check.get("status")
-            if expected_digest is None:
+            if key in conflicts:
+                errors[path].append(
+                    _semantic(
+                        ("checks", index, "expectedDigest"),
+                        f"cannot select an expected digest for conflicting source {key!r}",
+                    )
+                )
+                failed = True
+            elif expected_digest is None:
                 errors[path].append(
                     _semantic(("checks", index), f"unexpected integrity check {key!r}")
                 )
@@ -180,14 +247,22 @@ def validate_evaluation_semantics(
                 _semantic(("checks",), f"duplicate integrity checks: {duplicates!r}")
             )
             incomplete = True
-        missing = sorted(set(expected) - set(keys))
+        missing = sorted(set(occurrences) - set(keys))
         if missing:
             errors[path].append(
                 _semantic(("checks",), f"required integrity checks are missing: {missing!r}")
             )
             incomplete = True
 
-        computed_status = "incomplete" if incomplete else "mismatched" if failed else "matched"
+        computed_status = (
+            "mismatched"
+            if conflicts
+            else "incomplete"
+            if incomplete
+            else "mismatched"
+            if failed
+            else "matched"
+        )
         eligible = computed_status == "matched"
         if integrity.get("status") != computed_status:
             errors[path].append(

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:python-policy-ppf:composed:extensions:0.2.0",
   "title": "Python Policy PPF Composed Sidecar Extensions",
-  "description": "Non-authoritative composition schema accepting an unchanged official PPF document or either external sidecar extension document.",
+  "description": "Non-authoritative composition schema accepting an unchanged official PPF document or a registered external sidecar extension document.",
   "$comment": "This composition does not redefine or patch the official schema. Validators must register the official and extension schemas by their canonical $id values.",
   "oneOf": [
     {
@@ -13,6 +13,9 @@
     },
     {
       "$ref": "urn:python-policy-ppf:extension:evaluation-workflow:0.2.0"
+    },
+    {
+      "$ref": "urn:python-policy-ppf:extension:schema-conformance:0.2.0"
     }
   ],
   "discriminator": {
@@ -43,7 +46,10 @@
       "evaluation-run-assembly": "urn:python-policy-ppf:extension:evaluation-workflow:0.2.0#/$defs/EvaluationRunAssemblyDocument",
       "evaluation-workflow": "urn:python-policy-ppf:extension:evaluation-workflow:0.2.0#/$defs/EvaluationWorkflowDocument",
       "evidence-admission-derivation": "urn:python-policy-ppf:extension:evaluation-workflow:0.2.0#/$defs/EvidenceAdmissionDerivationDocument",
-      "qualification-integrity": "urn:python-policy-ppf:extension:evaluation-workflow:0.2.0#/$defs/QualificationIntegrityDocument"
+      "qualification-integrity": "urn:python-policy-ppf:extension:evaluation-workflow:0.2.0#/$defs/QualificationIntegrityDocument",
+      "schema-conformance-policy": "urn:python-policy-ppf:extension:schema-conformance:0.2.0#/$defs/SchemaConformancePolicyDocument",
+      "projection-conformance-report": "urn:python-policy-ppf:extension:schema-conformance:0.2.0#/$defs/ProjectionConformanceReportDocument",
+      "generated-fixture-run": "urn:python-policy-ppf:extension:schema-conformance:0.2.0#/$defs/GeneratedFixtureRunDocument"
     }
   }
 }

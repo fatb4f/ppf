@@ -1,10 +1,14 @@
 """Shared validation for Python Policy PPF documents."""
 
-from .core import ValidationError, validate_bundle, validate_semantics, validate_structure
+from .catalog import SchemaCatalog
+from .core import ValidationError
+from .validation import ValidationContext, ValidationResult, validate_documents, validate_paths
 
 __all__ = [
+    "SchemaCatalog",
+    "ValidationContext",
     "ValidationError",
-    "validate_bundle",
-    "validate_semantics",
-    "validate_structure",
+    "ValidationResult",
+    "validate_documents",
+    "validate_paths",
 ]

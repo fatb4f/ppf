@@ -1,4 +1,5 @@
 {
+  "composedSchema": "urn:python-policy-ppf:composed:extensions:0.2.0",
   "resources": [
     {
       "uri": "urn:python-policy-ppf:generation-policy:0.2.0",
@@ -11,6 +12,10 @@
     {
       "uri": "urn:python-policy-ppf:extension:evaluation-workflow:0.2.0",
       "path": "extensions/python-policy-ppf.eval-workflow-extension.schema.json"
+    },
+    {
+      "uri": "urn:python-policy-ppf:extension:schema-conformance:0.2.0",
+      "path": "extensions/python-policy-ppf.schema-conformance-extension.schema.json"
     },
     {
       "uri": "urn:python-policy-ppf:composed:extensions:0.2.0",

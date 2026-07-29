@@ -1,26 +1,19 @@
 from __future__ import annotations
 
 import copy
-import importlib.util
 import json
 import unittest
 from pathlib import Path
 
-PACKAGE = Path(__file__).resolve().parents[1]
-SCHEMA_PATH = PACKAGE / "references" / "python-policy-ppf.schema.json"
+from ppf.catalog import SchemaCatalog
+from ppf.core import ValidationError, validate_bundle, validate_semantics
+
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
-MODULE_PATH = PACKAGE / "scripts" / "validate_catalog.py"
-
-SPEC = importlib.util.spec_from_file_location("validate_catalog", MODULE_PATH)
-assert SPEC is not None and SPEC.loader is not None
-VALIDATOR = importlib.util.module_from_spec(SPEC)
-SPEC.loader.exec_module(VALIDATOR)
-
 
 class ValidateCatalogTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        cls.schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
+        cls.catalog = SchemaCatalog.load()
         cls.profile = json.loads(
             (FIXTURES / "valid-profile.json").read_text(encoding="utf-8")
         )
@@ -28,12 +21,23 @@ class ValidateCatalogTests(unittest.TestCase):
             (FIXTURES / "valid-report.json").read_text(encoding="utf-8")
         )
 
-    def validate(self, document: dict[str, object]) -> list[object]:
-        errors = VALIDATOR.validate_structure(
-            document, self.schema, self.schema
-        )
+    def validate(self, document: dict[str, object]) -> list[ValidationError]:
+        document_type = document.get("documentType")
+        entry = self.catalog.entry(document_type) if isinstance(document_type, str) else None
+        if entry is None:
+            return [
+                ValidationError(
+                    ("documentType",),
+                    f"unsupported documentType {document_type!r}",
+                    "structural",
+                )
+            ]
+        errors = [
+            ValidationError(tuple(error.absolute_path), error.message, "structural")
+            for error in self.catalog.validator(document_type).iter_errors(document)
+        ]
         if not errors:
-            errors.extend(VALIDATOR.validate_semantics(document))
+            errors.extend(validate_semantics(document))
         return errors
 
     def test_valid_profile(self) -> None:
@@ -167,7 +171,7 @@ class ValidateCatalogTests(unittest.TestCase):
         del document["tools"][0]["distributionRef"]
         errors = self.validate(document)
         self.assertTrue(
-            any(error.path[-1:] == ("distributionRef",) for error in errors), errors
+            any("distributionRef" in error.message for error in errors), errors
         )
 
     def test_bundle_digest_mismatch_is_rejected(self) -> None:
@@ -177,7 +181,7 @@ class ValidateCatalogTests(unittest.TestCase):
         report_raw = report_path.read_bytes()
         report = copy.deepcopy(self.report)
         report["profileRef"]["digest"] = "sha256:" + ("7" * 64)
-        errors = VALIDATOR.validate_bundle(
+        errors = validate_bundle(
             [
                 (profile_path, profile_raw, copy.deepcopy(self.profile)),
                 (report_path, report_raw, report),

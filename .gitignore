@@ -1,1 +1,4 @@
 deterministic-evidence.jsonl
+.hypothesis
+.pytest_cache
+.venv

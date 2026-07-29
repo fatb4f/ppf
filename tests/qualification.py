@@ -17,10 +17,12 @@ from hypothesis import given, settings, strategies
 from jsonschema import Draft202012Validator
 from pydantic import BaseModel, ConfigDict, Field
 
-from ppf.cli import run_validation, validate_paths
+from ppf import ValidationContext, ValidationResult, validate_paths
+from ppf.cli import run_validation
 
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE = ROOT / ".codex" / "skills" / "python-policy-ppf"
+SCHEMAS = ROOT / "src" / "ppf" / "schemas"
 FIXTURES = PACKAGE / "tests" / "fixtures"
 CLI = ROOT / "src" / "ppf" / "cli.py"
 CORE = ROOT / "src" / "ppf" / "core.py"
@@ -84,10 +86,10 @@ def _check(
 
 
 def _schemas_are_canonical() -> None:
-    registry = json.loads((PACKAGE / "schema-registry.json").read_text(encoding="utf-8"))
+    registry = json.loads((SCHEMAS / "schema-registry.json").read_text(encoding="utf-8"))
     assert registry["resources"]
     for resource in registry["resources"]:
-        schema = json.loads((PACKAGE / resource["path"]).read_text(encoding="utf-8"))
+        schema = json.loads((SCHEMAS / resource["path"]).read_text(encoding="utf-8"))
         assert schema["$id"] == resource["uri"]
         Draft202012Validator.check_schema(schema)
 
@@ -171,9 +173,12 @@ def _hypothesis_path_lists() -> None:
     def exercise(paths: list[Path]) -> None:
         received: list[list[Path]] = []
 
-        def fake_service(documents: list[Path]) -> dict[str, object]:
+        def fake_service(
+            documents: list[Path], *, context: ValidationContext | None = None
+        ) -> ValidationResult:
             received.append(documents)
-            return {"valid": True, "documents": []}
+            assert context is None
+            return ValidationResult(())
 
         output: list[str] = []
         assert run_validation(paths, service=fake_service, write=output.append) == 0
@@ -188,19 +193,31 @@ def _fixture_adapter_probe() -> None:
         [
             FIXTURES / "valid-profile.json",
             FIXTURES / "valid-implementation-policy-extension.json",
-        ]
+        ],
+        context=ValidationContext(ROOT),
     )
-    assert result["valid"]
-    assert len(result["documents"]) == 2
+    assert result.valid
+    assert len(result.documents) == 2
 
 
 def _validation_service_adapter_probe() -> None:
     calls: list[list[Path]] = []
     output: list[str] = []
 
-    def fake_service(paths: list[Path]) -> dict[str, object]:
+    class InvalidResult(ValidationResult):
+        @property
+        def valid(self) -> bool:
+            return False
+
+        def as_dict(self) -> dict[str, object]:
+            return {"valid": False, "documents": []}
+
+    def fake_service(
+        paths: list[Path], *, context: ValidationContext | None = None
+    ) -> ValidationResult:
         calls.append(paths)
-        return {"valid": False, "documents": []}
+        assert context is None
+        return InvalidResult(())
 
     documents = [Path("profile.json"), Path("bundle")]
     assert run_validation(documents, service=fake_service, write=output.append) == 1
@@ -211,11 +228,12 @@ def _validation_service_adapter_probe() -> None:
 def build_evidence() -> list[EvidenceRecord]:
     """Run every deterministic probe and return evidence sorted by check ID."""
     registry_paths = [
-        PACKAGE / "schema-registry.json",
-        PACKAGE / "references" / "python-policy-ppf.schema.json",
-        PACKAGE / "extensions" / "python-policy-implementation.extension.schema.json",
-        PACKAGE / "extensions" / "python-policy-ppf.eval-workflow-extension.schema.json",
-        PACKAGE / "extensions" / "python-policy-ppf.composed.schema.json",
+        SCHEMAS / "schema-registry.json",
+        SCHEMAS / "references" / "python-policy-ppf.schema.json",
+        SCHEMAS / "extensions" / "python-policy-implementation.extension.schema.json",
+        SCHEMAS / "extensions" / "python-policy-ppf.eval-workflow-extension.schema.json",
+        SCHEMAS / "extensions" / "python-policy-ppf.schema-conformance-extension.schema.json",
+        SCHEMAS / "extensions" / "python-policy-ppf.composed.schema.json",
     ]
     checks = [
         _check(

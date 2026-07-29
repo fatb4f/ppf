@@ -9,8 +9,8 @@
   },
   "profileRef": {
     "id": "python-3.14-default",
-    "digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
-    "uri": "tests/fixtures/valid-profile.json",
+    "digest": "sha256:feeeb2bb04827542fbb4b502559aca71576322e0c5a9634016b0a74130994238",
+    "uri": ".codex/skills/python-policy-ppf/tests/fixtures/valid-profile.json",
     "mediaType": "application/json"
   },
   "authorityAssignments": [
@@ -55,7 +55,7 @@
       },
       "configurationRef": {
         "id": "datamodel-codegen-config",
-        "digest": "sha256:5642fe274350cfa4efc22d61997323795dcd839004b6712b7ef04b2f130e9e84",
+        "digest": "sha256:bc7d95f10a576c4cfbb28a943875ef457d38cc5d910d0217d1d1c1901fbaaa80",
         "uri": "pyproject.toml",
         "mediaType": "application/toml"
       },
@@ -74,7 +74,7 @@
       "inputSchemaRef": {
         "id": "python-policy-ppf-schema",
         "digest": "sha256:06055b436bb224a4fc76eef96821d7e467eeb1c047b78807945c22e06d7d4eaf",
-        "uri": "references/python-policy-ppf.schema.json",
+        "uri": "src/ppf/schemas/references/python-policy-ppf.schema.json",
         "mediaType": "application/schema+json"
       },
       "outputPath": "src/ppf/generated/models.py"

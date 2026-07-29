@@ -5,24 +5,18 @@ import json
 from pathlib import Path
 
 from jsonschema import Draft202012Validator
-from referencing import Registry, Resource
 
-PACKAGE = Path(__file__).resolve().parents[1]
+from ppf.catalog import SchemaCatalog
+
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
-REGISTRY = json.loads((PACKAGE / "schema-registry.json").read_text(encoding="utf-8"))
 
 
 def _validator() -> Draft202012Validator:
-    resources: dict[str, Resource[object]] = {}
-    for item in REGISTRY["resources"]:
-        schema = json.loads((PACKAGE / item["path"]).read_text(encoding="utf-8"))
-        resources[item["uri"]] = Resource.from_contents(schema)
-    registry = Registry().with_resources(resources.items())
-    implementation = resources[
-        "urn:python-policy-ppf:implementation-policy-extension:0.2.0"
-    ].contents
-    assert isinstance(implementation, dict)
-    return Draft202012Validator(implementation, registry=registry)
+    catalog = SchemaCatalog.load()
+    return Draft202012Validator(
+        {"$ref": "urn:python-policy-ppf:implementation-policy-extension:0.2.0"},
+        registry=catalog.registry,
+    )
 
 
 def _fixture(name: str) -> dict[str, object]:

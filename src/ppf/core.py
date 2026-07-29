@@ -3,15 +3,13 @@
 from __future__ import annotations
 
 import hashlib
-import json
-import math
 import re
 import sys
 from collections import Counter
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlsplit
 
 Json = Any
 PathParts = tuple[str | int, ...]
@@ -49,19 +47,23 @@ DOCUMENT_IDS = {
     "dependency-wiring-plan": "planId",
     "capability-assembly-record": "recordId",
     "qualification-fixture-projection": "projectionId",
+    "schema-conformance-policy": "policyId",
+    "projection-conformance-report": "reportId",
+    "generated-fixture-run": "runId",
 }
 RFC3339 = re.compile(
     r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}"
     r"(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$"
 )
-VALID_HEX_ESCAPE = re.compile(r"%(?:[0-9A-Fa-f]{2})")
 
 
+@dataclass(frozen=True)
 class ValidationError:
-    def __init__(self, path: PathParts, message: str, kind: str) -> None:
-        self.path = path
-        self.message = message
-        self.kind = kind
+    """Stable structural, semantic, or input validation error."""
+
+    path: PathParts
+    message: str
+    kind: str
 
     def as_dict(self) -> dict[str, str]:
         return {
@@ -78,50 +80,6 @@ def _format_path(path: PathParts) -> str:
     return "/" + "/".join(escaped)
 
 
-def _canonical(value: Json) -> str:
-    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
-
-
-def _same(left: Json, right: Json) -> bool:
-    return type(left) is type(right) and _canonical(left) == _canonical(right)
-
-
-def _resolve_ref(root: dict[str, Json], reference: str) -> dict[str, Json]:
-    if not reference.startswith("#/"):
-        raise ValueError(f"only local references are supported: {reference!r}")
-    node: Json = root
-    for raw_part in reference[2:].split("/"):
-        part = raw_part.replace("~1", "/").replace("~0", "~")
-        node = node[part]
-    if not isinstance(node, dict):
-        raise ValueError(f"reference does not resolve to a schema object: {reference!r}")
-    return node
-
-
-def _matches_type(value: Json, expected: str) -> bool:
-    match expected:
-        case "null":
-            return value is None
-        case "boolean":
-            return isinstance(value, bool)
-        case "integer":
-            return isinstance(value, int) and not isinstance(value, bool)
-        case "number":
-            return (
-                isinstance(value, (int, float))
-                and not isinstance(value, bool)
-                and not (isinstance(value, float) and not math.isfinite(value))
-            )
-        case "string":
-            return isinstance(value, str)
-        case "array":
-            return isinstance(value, list)
-        case "object":
-            return isinstance(value, dict)
-        case _:
-            raise ValueError(f"unsupported JSON Schema type: {expected!r}")
-
-
 def _valid_datetime(value: str) -> bool:
     if not RFC3339.fullmatch(value):
         return False
@@ -130,170 +88,6 @@ def _valid_datetime(value: str) -> bool:
     except ValueError:
         return False
     return True
-
-
-def _valid_uri_reference(value: str) -> bool:
-    if any(character.isspace() or ord(character) < 32 for character in value):
-        return False
-    escapes_removed = VALID_HEX_ESCAPE.sub("", value)
-    if "%" in escapes_removed:
-        return False
-    try:
-        urlsplit(value)
-    except ValueError:
-        return False
-    return True
-
-
-def _validate_format(value: str, name: str) -> bool:
-    if name == "date-time":
-        return _valid_datetime(value)
-    if name == "uri-reference":
-        return _valid_uri_reference(value)
-    raise ValueError(f"unsupported format: {name!r}")
-
-
-def validate_structure(
-    value: Json,
-    schema: dict[str, Json],
-    root: dict[str, Json],
-    path: PathParts = (),
-) -> list[ValidationError]:
-    errors: list[ValidationError] = []
-
-    reference = schema.get("$ref")
-    if isinstance(reference, str):
-        try:
-            errors.extend(validate_structure(value, _resolve_ref(root, reference), root, path))
-        except (KeyError, TypeError, ValueError) as error:
-            errors.append(ValidationError(path, str(error), "schema"))
-        return errors
-
-    branches = schema.get("allOf")
-    if isinstance(branches, list):
-        for branch in branches:
-            errors.extend(validate_structure(value, branch, root, path))
-
-    condition = schema.get("if")
-    if isinstance(condition, dict):
-        condition_errors = validate_structure(value, condition, root, path)
-        selected = schema.get("then") if not condition_errors else schema.get("else")
-        if isinstance(selected, dict):
-            errors.extend(validate_structure(value, selected, root, path))
-
-    branches = schema.get("anyOf")
-    if isinstance(branches, list):
-        branch_errors = [validate_structure(value, branch, root, path) for branch in branches]
-        if not any(not branch_error for branch_error in branch_errors):
-            errors.extend(min(branch_errors, key=len))
-        return errors
-
-    branches = schema.get("oneOf")
-    if isinstance(branches, list):
-        branch_errors = [validate_structure(value, branch, root, path) for branch in branches]
-        matches = sum(not branch_error for branch_error in branch_errors)
-        if matches == 0:
-            errors.extend(min(branch_errors, key=len))
-        elif matches > 1:
-            errors.append(
-                ValidationError(
-                    path,
-                    f"must match exactly one allowed schema; matched {matches}",
-                    "structural",
-                )
-            )
-        return errors
-
-    expected_type = schema.get("type")
-    if isinstance(expected_type, str) and not _matches_type(value, expected_type):
-        return [
-            ValidationError(
-                path,
-                f"expected {expected_type}, got {type(value).__name__}",
-                "structural",
-            )
-        ]
-
-    if "const" in schema and not _same(value, schema["const"]):
-        errors.append(ValidationError(path, f"must equal {schema['const']!r}", "structural"))
-    if "enum" in schema and not any(_same(value, item) for item in schema["enum"]):
-        errors.append(ValidationError(path, f"must be one of {schema['enum']!r}", "structural"))
-
-    if isinstance(value, str):
-        minimum = schema.get("minLength")
-        if isinstance(minimum, int) and len(value) < minimum:
-            errors.append(
-                ValidationError(path, f"must contain at least {minimum} characters", "structural")
-            )
-        pattern = schema.get("pattern")
-        if isinstance(pattern, str) and re.search(pattern, value) is None:
-            errors.append(ValidationError(path, f"must match pattern {pattern!r}", "structural"))
-        format_name = schema.get("format")
-        if isinstance(format_name, str) and not _validate_format(value, format_name):
-            errors.append(ValidationError(path, f"must be a valid {format_name}", "structural"))
-
-    if (
-        isinstance(value, (int, float))
-        and not isinstance(value, bool)
-        and (not isinstance(value, float) or math.isfinite(value))
-    ):
-        minimum = schema.get("minimum")
-        if isinstance(minimum, (int, float)) and value < minimum:
-            errors.append(ValidationError(path, f"must be >= {minimum}", "structural"))
-        exclusive_minimum = schema.get("exclusiveMinimum")
-        if isinstance(exclusive_minimum, (int, float)) and value <= exclusive_minimum:
-            errors.append(ValidationError(path, f"must be > {exclusive_minimum}", "structural"))
-
-    if isinstance(value, list):
-        minimum = schema.get("minItems")
-        if isinstance(minimum, int) and len(value) < minimum:
-            errors.append(
-                ValidationError(path, f"must contain at least {minimum} items", "structural")
-            )
-        if schema.get("uniqueItems") is True:
-            canonical = [_canonical(item) for item in value]
-            if len(canonical) != len(set(canonical)):
-                errors.append(ValidationError(path, "items must be unique", "structural"))
-        item_schema = schema.get("items")
-        if isinstance(item_schema, dict):
-            for index, item in enumerate(value):
-                errors.extend(validate_structure(item, item_schema, root, (*path, index)))
-
-    if isinstance(value, dict):
-        properties = schema.get("properties", {})
-        required = schema.get("required", [])
-        if isinstance(required, list):
-            for name in required:
-                if name not in value:
-                    errors.append(
-                        ValidationError((*path, name), "required property is missing", "structural")
-                    )
-
-        patterns = schema.get("patternProperties", {})
-        for name, item in value.items():
-            matched = False
-            if isinstance(properties, dict) and name in properties:
-                matched = True
-                errors.extend(validate_structure(item, properties[name], root, (*path, name)))
-            if isinstance(patterns, dict):
-                for pattern, item_schema in patterns.items():
-                    if re.search(pattern, name):
-                        matched = True
-                        errors.extend(validate_structure(item, item_schema, root, (*path, name)))
-            if not matched:
-                additional = schema.get("additionalProperties", True)
-                if additional is False:
-                    errors.append(
-                        ValidationError(
-                            (*path, name),
-                            "additional property is not allowed",
-                            "structural",
-                        )
-                    )
-                elif isinstance(additional, dict):
-                    errors.extend(validate_structure(item, additional, root, (*path, name)))
-
-    return errors
 
 
 def _semantic(path: PathParts, message: str) -> ValidationError:
@@ -807,6 +601,12 @@ def _internal_content_refs(
             ("providerRegistryRef",),
             ("wiringPlanRef",),
         ),
+        "schema-conformance-policy": (
+            ("profileRef",),
+            ("implementationPolicyRef",),
+        ),
+        "projection-conformance-report": (("policyRef",),),
+        "generated-fixture-run": (("policyRef",),),
     }
     paths = list(fixed.get(str(document_type), ()))
 
@@ -931,13 +731,13 @@ def validate_bundle(
 
 
 def _expand_inputs(paths: list[Path]) -> list[Path]:
-    expanded: list[Path] = []
+    expanded: set[Path] = set()
     for path in paths:
         if path.is_dir():
-            expanded.extend(sorted(path.rglob("*.json")))
+            expanded.update(path.rglob("*.json"))
         else:
-            expanded.append(path)
-    return expanded
+            expanded.add(path)
+    return sorted(expanded, key=str)
 
 
 def main() -> int:
