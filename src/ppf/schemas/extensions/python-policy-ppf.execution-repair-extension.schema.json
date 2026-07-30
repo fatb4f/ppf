@@ -1,0 +1,622 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:python-policy-ppf:extension:execution-repair:0.1.0",
+  "title": "Python Policy PPF Execution and Repair Extension",
+  "description": "Closed sidecar contracts for deterministic invocation compilation, locked execution environments, truthful artifacts, canonical semantic projection, and bounded Git repair.",
+  "$defs": {
+    "Identifier": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$"
+    },
+    "Digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "ContentRef": {
+      "$ref": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/ContentRef"
+    },
+    "AssessorKind": {
+      "enum": ["cyclopts", "ansible", "pytest", "ty", "runtime"],
+      "type": "string"
+    },
+    "Invocation": {
+      "additionalProperties": false,
+      "properties": {
+        "invocationId": {"$ref": "#/$defs/Identifier"},
+        "sequence": {"type": "integer", "minimum": 10, "multipleOf": 10},
+        "caseRef": {"$ref": "#/$defs/Identifier"},
+        "stageRef": {"$ref": "#/$defs/Identifier"},
+        "assessorRef": {"$ref": "#/$defs/Identifier"},
+        "assessorKind": {"$ref": "#/$defs/AssessorKind"},
+        "executableRef": {"$ref": "#/$defs/Identifier"},
+        "argv": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "workingDirectoryRef": {"$ref": "#/$defs/Identifier"},
+        "environmentRef": {"$ref": "#/$defs/Identifier"},
+        "sandboxRef": {"$ref": "#/$defs/Identifier"},
+        "adapterConfig": {
+          "additionalProperties": false,
+          "properties": {
+            "reportFormat": {"type": "string", "minLength": 1},
+            "eventFormat": {"type": "string", "minLength": 1},
+            "mode": {"enum": ["check", "run"]},
+            "allowUnknownEvents": {"type": "boolean"}
+          },
+          "type": "object"
+        }
+      },
+      "required": [
+        "invocationId",
+        "sequence",
+        "caseRef",
+        "stageRef",
+        "assessorRef",
+        "assessorKind",
+        "executableRef",
+        "argv",
+        "workingDirectoryRef",
+        "environmentRef",
+        "sandboxRef",
+        "adapterConfig"
+      ],
+      "type": "object"
+    },
+    "EvaluationInvocationSetDocument": {
+      "additionalProperties": false,
+      "properties": {
+        "documentType": {"const": "evaluation-invocation-set"},
+        "schemaVersion": {"const": "0.1.0"},
+        "invocationSetId": {"$ref": "#/$defs/Identifier"},
+        "planRef": {"$ref": "#/$defs/ContentRef"},
+        "stageRegistryRef": {"$ref": "#/$defs/ContentRef"},
+        "assessorProfileRef": {"$ref": "#/$defs/ContentRef"},
+        "repositoryRef": {"$ref": "#/$defs/ContentRef"},
+        "invocations": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/Invocation"}
+        }
+      },
+      "required": [
+        "documentType",
+        "schemaVersion",
+        "invocationSetId",
+        "planRef",
+        "stageRegistryRef",
+        "assessorProfileRef",
+        "repositoryRef",
+        "invocations"
+      ],
+      "type": "object"
+    },
+    "RuntimeIdentity": {
+      "additionalProperties": false,
+      "properties": {
+        "implementation": {"type": "string", "minLength": 1},
+        "version": {"type": "string", "minLength": 1},
+        "executableRef": {"$ref": "#/$defs/ContentRef"},
+        "stdlibTreeDigest": {"$ref": "#/$defs/Digest"},
+        "stdlibFiles": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"}
+        }
+      },
+      "required": [
+        "implementation",
+        "version",
+        "executableRef",
+        "stdlibTreeDigest",
+        "stdlibFiles"
+      ],
+      "type": "object"
+    },
+    "DistributionLock": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {"$ref": "#/$defs/Identifier"},
+        "name": {"type": "string", "pattern": "^[a-z0-9]+(?:[-_.][a-z0-9]+)*$"},
+        "version": {"type": "string", "minLength": 1},
+        "artifactRefs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/ContentRef"}
+        },
+        "installedTreeDigest": {"$ref": "#/$defs/Digest"},
+        "installedFiles": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"}
+        },
+        "dependencyRefs": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/Identifier"}
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "version",
+        "artifactRefs",
+        "installedTreeDigest",
+        "installedFiles",
+        "dependencyRefs"
+      ],
+      "type": "object"
+    },
+    "EntrypointLock": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {"$ref": "#/$defs/Identifier"},
+        "name": {"type": "string", "minLength": 1},
+        "distributionRef": {"$ref": "#/$defs/Identifier"},
+        "module": {"type": ["string", "null"]},
+        "callable": {"type": ["string", "null"]},
+        "relativeExecutable": {"type": ["string", "null"], "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"}
+      },
+      "anyOf": [
+        {"required": ["module"]},
+        {"required": ["relativeExecutable"]}
+      ],
+      "required": [
+        "id",
+        "name",
+        "distributionRef",
+        "module",
+        "callable",
+        "relativeExecutable"
+      ],
+      "type": "object"
+    },
+    "AnsibleClosure": {
+      "additionalProperties": false,
+      "properties": {
+        "runnerDistributionRef": {"$ref": "#/$defs/Identifier"},
+        "coreDistributionRef": {"$ref": "#/$defs/Identifier"},
+        "playbookEntrypointRef": {"$ref": "#/$defs/Identifier"},
+        "collectionRefs": {"type": "array", "items": {"$ref": "#/$defs/ContentRef"}},
+        "pluginRefs": {"type": "array", "items": {"$ref": "#/$defs/ContentRef"}},
+        "inventoryPluginRefs": {"type": "array", "items": {"$ref": "#/$defs/ContentRef"}},
+        "configurationRef": {"$ref": "#/$defs/ContentRef"}
+      },
+      "required": [
+        "runnerDistributionRef",
+        "coreDistributionRef",
+        "playbookEntrypointRef",
+        "collectionRefs",
+        "pluginRefs",
+        "inventoryPluginRefs",
+        "configurationRef"
+      ],
+      "type": "object"
+    },
+    "ToolEnvironmentManifestDocument": {
+      "additionalProperties": false,
+      "properties": {
+        "documentType": {"const": "tool-environment-manifest"},
+        "schemaVersion": {"const": "0.1.0"},
+        "manifestId": {"$ref": "#/$defs/Identifier"},
+        "runtime": {"$ref": "#/$defs/RuntimeIdentity"},
+        "lockfileRef": {"$ref": "#/$defs/ContentRef"},
+        "environmentDigest": {"$ref": "#/$defs/Digest"},
+        "environmentFiles": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"}
+        },
+        "distributions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/DistributionLock"}
+        },
+        "entrypoints": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/EntrypointLock"}
+        },
+        "ansible": {
+          "anyOf": [
+            {"$ref": "#/$defs/AnsibleClosure"},
+            {"type": "null"}
+          ]
+        }
+      },
+      "required": [
+        "documentType",
+        "schemaVersion",
+        "manifestId",
+        "runtime",
+        "lockfileRef",
+        "environmentDigest",
+        "environmentFiles",
+        "distributions",
+        "entrypoints",
+        "ansible"
+      ],
+      "type": "object"
+    },
+    "EnvironmentProfileDocument": {
+      "additionalProperties": false,
+      "properties": {
+        "documentType": {"const": "environment-profile"},
+        "schemaVersion": {"const": "0.1.0"},
+        "environmentId": {"$ref": "#/$defs/Identifier"},
+        "toolEnvironmentRef": {"$ref": "#/$defs/ContentRef"},
+        "platform": {"type": "string", "minLength": 1},
+        "variables": {
+          "type": "object",
+          "propertyNames": {"pattern": "^[A-Z_][A-Z0-9_]*$"},
+          "additionalProperties": {"type": "string"}
+        }
+      },
+      "required": [
+        "documentType",
+        "schemaVersion",
+        "environmentId",
+        "toolEnvironmentRef",
+        "platform",
+        "variables"
+      ],
+      "type": "object"
+    },
+    "AssessorDescriptor": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {"$ref": "#/$defs/Identifier"},
+        "kind": {"$ref": "#/$defs/AssessorKind"},
+        "executableRef": {"$ref": "#/$defs/Identifier"},
+        "adapterRef": {"$ref": "#/$defs/ContentRef"},
+        "normalizerRef": {"$ref": "#/$defs/ContentRef"},
+        "probeRefs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/Identifier"}
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "executableRef",
+        "adapterRef",
+        "normalizerRef",
+        "probeRefs"
+      ],
+      "type": "object"
+    },
+    "AssessorProfileDocument": {
+      "additionalProperties": false,
+      "properties": {
+        "documentType": {"const": "assessor-profile"},
+        "schemaVersion": {"const": "0.1.0"},
+        "profileId": {"$ref": "#/$defs/Identifier"},
+        "assessors": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/AssessorDescriptor"}
+        }
+      },
+      "required": ["documentType", "schemaVersion", "profileId", "assessors"],
+      "type": "object"
+    },
+    "SandboxProfileDocument": {
+      "additionalProperties": false,
+      "properties": {
+        "documentType": {"const": "sandbox-profile"},
+        "schemaVersion": {"const": "0.1.0"},
+        "sandboxId": {"$ref": "#/$defs/Identifier"},
+        "repositoryReadOnly": {"const": true},
+        "pidNamespace": {"const": "isolated"},
+        "userNamespace": {"const": "isolated"},
+        "profile": {
+          "$ref": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/SandboxProfile"
+        }
+      },
+      "required": [
+        "documentType",
+        "schemaVersion",
+        "sandboxId",
+        "repositoryReadOnly",
+        "pidNamespace",
+        "userNamespace",
+        "profile"
+      ],
+      "type": "object"
+    },
+    "Diagnostic": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {"$ref": "#/$defs/Identifier"},
+        "message": {"type": "string", "minLength": 1},
+        "details": {"type": "object"}
+      },
+      "required": ["code", "message", "details"],
+      "type": "object"
+    },
+    "OperationalAttemptDocument": {
+      "additionalProperties": false,
+      "properties": {
+        "documentType": {"const": "operational-attempt"},
+        "schemaVersion": {"const": "0.1.0"},
+        "attemptId": {"$ref": "#/$defs/Identifier"},
+        "invocationRef": {"$ref": "#/$defs/ContentRef"},
+        "status": {
+          "enum": [
+            "invalid",
+            "integrity-failed",
+            "tool-unavailable",
+            "unsupported",
+            "preparation-failed",
+            "artifact-failed"
+          ]
+        },
+        "phase": {"$ref": "#/$defs/Identifier"},
+        "diagnostics": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/Diagnostic"}
+        },
+        "recordedAt": {"type": "string", "format": "date-time"}
+      },
+      "required": [
+        "documentType",
+        "schemaVersion",
+        "attemptId",
+        "invocationRef",
+        "status",
+        "phase",
+        "diagnostics",
+        "recordedAt"
+      ],
+      "type": "object"
+    },
+    "ArtifactEntry": {
+      "additionalProperties": false,
+      "properties": {
+        "logicalName": {"type": "string", "minLength": 1},
+        "role": {
+          "enum": [
+            "stdout",
+            "stderr",
+            "events",
+            "native-report",
+            "execution-metadata",
+            "operational-attempt",
+            "producer-envelope",
+            "counterexample",
+            "qualification-report",
+            "semantic-projection",
+            "repair-record"
+          ]
+        },
+        "mediaType": {"type": "string", "minLength": 1},
+        "size": {"type": "integer", "minimum": 0},
+        "contentRef": {"$ref": "#/$defs/ContentRef"}
+      },
+      "required": ["logicalName", "role", "mediaType", "size", "contentRef"],
+      "type": "object"
+    },
+    "ArtifactManifestDocument": {
+      "additionalProperties": false,
+      "properties": {
+        "documentType": {"const": "artifact-manifest"},
+        "schemaVersion": {"const": "0.1.0"},
+        "manifestId": {"$ref": "#/$defs/Identifier"},
+        "runRef": {"$ref": "#/$defs/ContentRef"},
+        "createdAt": {"type": "string", "format": "date-time"},
+        "artifacts": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/ArtifactEntry"}
+        }
+      },
+      "required": [
+        "documentType",
+        "schemaVersion",
+        "manifestId",
+        "runRef",
+        "createdAt",
+        "artifacts"
+      ],
+      "type": "object"
+    },
+    "SemanticObservation": {
+      "additionalProperties": false,
+      "properties": {
+        "caseRef": {"$ref": "#/$defs/Identifier"},
+        "subjectRef": {"$ref": "#/$defs/Identifier"},
+        "probeRef": {"$ref": "#/$defs/Identifier"},
+        "source": {"type": "string", "minLength": 1},
+        "status": {"type": "string", "minLength": 1},
+        "normalizedCode": {"type": "string", "minLength": 1},
+        "payload": {}
+      },
+      "required": [
+        "caseRef",
+        "subjectRef",
+        "probeRef",
+        "source",
+        "status",
+        "normalizedCode",
+        "payload"
+      ],
+      "type": "object"
+    },
+    "EvaluationSemanticProjectionDocument": {
+      "additionalProperties": false,
+      "properties": {
+        "documentType": {"const": "evaluation-semantic-projection"},
+        "schemaVersion": {"const": "0.1.0"},
+        "projectionId": {"$ref": "#/$defs/Identifier"},
+        "inputClosureDigest": {"$ref": "#/$defs/Digest"},
+        "normalizerRef": {"$ref": "#/$defs/ContentRef"},
+        "invocationRefs": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/Identifier"}
+        },
+        "observations": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/SemanticObservation"}
+        },
+        "oracleResults": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/OracleResult"
+          }
+        },
+        "admissions": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/EvidenceAdmission"
+          }
+        },
+        "itemVerdicts": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:python-policy-ppf:generation-policy:0.2.0#/$defs/ItemVerdict"
+          }
+        },
+        "regressionRefs": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/ContentRef"}
+        },
+        "projectionDigest": {"$ref": "#/$defs/Digest"}
+      },
+      "required": [
+        "documentType",
+        "schemaVersion",
+        "projectionId",
+        "inputClosureDigest",
+        "normalizerRef",
+        "invocationRefs",
+        "observations",
+        "oracleResults",
+        "admissions",
+        "itemVerdicts",
+        "regressionRefs",
+        "projectionDigest"
+      ],
+      "type": "object"
+    },
+    "RepairDecisionDocument": {
+      "additionalProperties": false,
+      "properties": {
+        "documentType": {"const": "repair-decision"},
+        "schemaVersion": {"const": "0.1.0"},
+        "decisionId": {"$ref": "#/$defs/Identifier"},
+        "decision": {"enum": ["repair", "stop"]},
+        "baseCommit": {"type": "string", "pattern": "^[a-f0-9]{40,64}$"},
+        "baseTree": {"type": "string", "pattern": "^[a-f0-9]{40,64}$"},
+        "patchRef": {"$ref": "#/$defs/ContentRef"},
+        "failedItems": {
+          "type": "array",
+          "items": {"type": "string", "pattern": "^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$"}
+        },
+        "counterexampleRefs": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/ContentRef"}
+        },
+        "permittedPaths": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"}
+        },
+        "forbiddenPaths": {
+          "type": "array",
+          "items": {"type": "string", "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"}
+        },
+        "remainingCycles": {"type": "integer", "minimum": 0},
+        "nextSelector": {
+          "additionalProperties": false,
+          "properties": {
+            "items": {"type": "array", "items": {"type": "string"}},
+            "stages": {"type": "array", "items": {"$ref": "#/$defs/Identifier"}}
+          },
+          "required": ["items", "stages"],
+          "type": "object"
+        }
+      },
+      "required": [
+        "documentType",
+        "schemaVersion",
+        "decisionId",
+        "decision",
+        "baseCommit",
+        "baseTree",
+        "patchRef",
+        "failedItems",
+        "counterexampleRefs",
+        "permittedPaths",
+        "forbiddenPaths",
+        "remainingCycles",
+        "nextSelector"
+      ],
+      "type": "object"
+    },
+    "RepairApplicationRecordDocument": {
+      "additionalProperties": false,
+      "properties": {
+        "documentType": {"const": "repair-application-record"},
+        "schemaVersion": {"const": "0.1.0"},
+        "recordId": {"$ref": "#/$defs/Identifier"},
+        "decisionRef": {"$ref": "#/$defs/ContentRef"},
+        "baseCommit": {"type": "string", "pattern": "^[a-f0-9]{40,64}$"},
+        "baseTree": {"type": "string", "pattern": "^[a-f0-9]{40,64}$"},
+        "requestedPatchDigest": {"$ref": "#/$defs/Digest"},
+        "canonicalDiffDigest": {"$ref": "#/$defs/Digest"},
+        "resultTree": {"type": "string", "pattern": "^[a-f0-9]{40,64}$"},
+        "resultCommit": {"type": "string", "pattern": "^[a-f0-9]{40,64}$"},
+        "changedPaths": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1}
+        },
+        "promotedRef": {"type": "string", "pattern": "^refs/ppf/repairs/.+$"},
+        "appliedAt": {"type": "string", "format": "date-time"}
+      },
+      "required": [
+        "documentType",
+        "schemaVersion",
+        "recordId",
+        "decisionRef",
+        "baseCommit",
+        "baseTree",
+        "requestedPatchDigest",
+        "canonicalDiffDigest",
+        "resultTree",
+        "resultCommit",
+        "changedPaths",
+        "promotedRef",
+        "appliedAt"
+      ],
+      "type": "object"
+    }
+  },
+  "oneOf": [
+    {"$ref": "#/$defs/EvaluationInvocationSetDocument"},
+    {"$ref": "#/$defs/ToolEnvironmentManifestDocument"},
+    {"$ref": "#/$defs/EnvironmentProfileDocument"},
+    {"$ref": "#/$defs/AssessorProfileDocument"},
+    {"$ref": "#/$defs/SandboxProfileDocument"},
+    {"$ref": "#/$defs/OperationalAttemptDocument"},
+    {"$ref": "#/$defs/ArtifactManifestDocument"},
+    {"$ref": "#/$defs/EvaluationSemanticProjectionDocument"},
+    {"$ref": "#/$defs/RepairDecisionDocument"},
+    {"$ref": "#/$defs/RepairApplicationRecordDocument"}
+  ],
+  "discriminator": {
+    "propertyName": "documentType",
+    "mapping": {
+      "evaluation-invocation-set": "#/$defs/EvaluationInvocationSetDocument",
+      "tool-environment-manifest": "#/$defs/ToolEnvironmentManifestDocument",
+      "environment-profile": "#/$defs/EnvironmentProfileDocument",
+      "assessor-profile": "#/$defs/AssessorProfileDocument",
+      "sandbox-profile": "#/$defs/SandboxProfileDocument",
+      "operational-attempt": "#/$defs/OperationalAttemptDocument",
+      "artifact-manifest": "#/$defs/ArtifactManifestDocument",
+      "evaluation-semantic-projection": "#/$defs/EvaluationSemanticProjectionDocument",
+      "repair-decision": "#/$defs/RepairDecisionDocument",
+      "repair-application-record": "#/$defs/RepairApplicationRecordDocument"
+    }
+  }
+}

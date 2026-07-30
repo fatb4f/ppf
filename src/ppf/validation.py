@@ -21,6 +21,7 @@ from .core import (
     validate_semantics,
 )
 from .evaluation import validate_evaluation_semantics
+from .execution_contracts import validate_execution_semantics
 
 Json = Any
 LoadedDocument = tuple[Path, bytes, dict[str, Json]]
@@ -422,6 +423,8 @@ def validate_documents(
     for path, bundle_errors in validate_bundle(structurally_valid).items():
         errors[path].extend(bundle_errors)
     for path, semantic_errors in validate_evaluation_semantics(structurally_valid).items():
+        errors[path].extend(semantic_errors)
+    for path, semantic_errors in validate_execution_semantics(structurally_valid).items():
         errors[path].extend(semantic_errors)
     return _result(errors)
 

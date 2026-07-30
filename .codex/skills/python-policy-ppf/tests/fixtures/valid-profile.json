@@ -77,7 +77,7 @@
       ],
       "configurationRef": {
         "id": "ruff-config",
-        "digest": "sha256:bc7d95f10a576c4cfbb28a943875ef457d38cc5d910d0217d1d1c1901fbaaa80",
+        "digest": "sha256:8ccaa6b220dde063f5b6db2e0d7193eacb3b938411a3a108f28f057a59a976b2",
         "uri": "pyproject.toml",
         "mediaType": "application/toml"
       },

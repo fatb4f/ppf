@@ -1,7 +1,7 @@
 # Python Policy PPF sidecar extensions
 
 The installed `ppf.schemas` package preserves the official schema unchanged and
-registers three additive Draft 2020-12 sidecar schemas:
+registers four additive Draft 2020-12 sidecar schemas:
 
 - `ppf.schemas/extensions/python-policy-ppf.eval-workflow-extension.schema.json`
   (`urn:python-policy-ppf:extension:evaluation-workflow:0.2.0`)
@@ -9,6 +9,12 @@ registers three additive Draft 2020-12 sidecar schemas:
   (`urn:python-policy-ppf:implementation-policy-extension:0.2.0`)
 - `ppf.schemas/extensions/python-policy-ppf.schema-conformance-extension.schema.json`
   (`urn:python-policy-ppf:extension:schema-conformance:0.2.0`)
+- `ppf.schemas/extensions/python-policy-ppf.execution-repair-extension.schema.json`
+  (`urn:python-policy-ppf:extension:execution-repair:0.1.0`)
+
+The active composed catalog is
+`urn:python-policy-ppf:composed:extensions:0.3.0`. Existing official and
+evaluation-workflow `0.2.0` schema bytes remain unchanged.
 
 The composed schema accepts an official document or a registered extension
 document. The packaged registry maps every canonical `$id` to its

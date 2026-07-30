@@ -29,7 +29,7 @@ def _construct(schemas: dict[str, dict[str, object]], paths: dict[str, str], uri
 
 def test_catalog_is_complete_and_deterministic() -> None:
     catalog = SchemaCatalog.load()
-    assert len(catalog.entries) == 29
+    assert len(catalog.entries) == 39
     assert [entry.document_type for entry in catalog.entries] == sorted(
         entry.document_type for entry in catalog.entries
     )
@@ -37,6 +37,9 @@ def test_catalog_is_complete_and_deterministic() -> None:
         "schema-conformance-policy",
         "projection-conformance-report",
         "generated-fixture-run",
+        "evaluation-invocation-set",
+        "tool-environment-manifest",
+        "repair-application-record",
     } <= {entry.document_type for entry in catalog.entries}
 
 

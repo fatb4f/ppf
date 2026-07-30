@@ -1,5 +1,5 @@
 {
-  "composedSchema": "urn:python-policy-ppf:composed:extensions:0.2.0",
+  "composedSchema": "urn:python-policy-ppf:composed:extensions:0.3.0",
   "resources": [
     {
       "uri": "urn:python-policy-ppf:generation-policy:0.2.0",
@@ -18,8 +18,12 @@
       "path": "extensions/python-policy-ppf.schema-conformance-extension.schema.json"
     },
     {
-      "uri": "urn:python-policy-ppf:composed:extensions:0.2.0",
-      "path": "extensions/python-policy-ppf.composed.schema.json"
+      "uri": "urn:python-policy-ppf:extension:execution-repair:0.1.0",
+      "path": "extensions/python-policy-ppf.execution-repair-extension.schema.json"
+    },
+    {
+      "uri": "urn:python-policy-ppf:composed:extensions:0.3.0",
+      "path": "extensions/python-policy-ppf.composed-0.3.schema.json"
     }
   ]
 }

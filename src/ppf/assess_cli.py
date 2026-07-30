@@ -1,0 +1,225 @@
+"""Cyclopts command adapter for evidence-producing assessment."""
+
+from __future__ import annotations
+
+import json
+import tempfile
+from dataclasses import replace
+from pathlib import Path
+from typing import Annotated, Any
+
+from cyclopts import App, Parameter
+
+from .artifacts import (
+    ContentAddressedArtifactStore,
+    artifact_manifest,
+    canonical_json_bytes,
+    pretty_json_bytes,
+    repository_tree_ref,
+)
+from .assessment import AssessmentRequest, AssessmentService, SystemClock
+from .assessors import default_assessor_registry
+from .cli_common import (
+    by_type,
+    content_ref,
+    exact_bundle_refs,
+    load_valid_bundle,
+    render_json,
+)
+from .execution import BubblewrapSandbox
+from .invocations import compile_invocation_set
+from .tool_environment import ToolEnvironmentError, ToolEnvironmentVerifier
+
+Json = Any
+
+app = App(
+    name="ppf-assess",
+    help="Compile and execute locked PPF assessment invocations.",
+    result_action="return_value",
+)
+
+
+def _compile(
+    documents: dict[str, dict[str, Json]],
+    repository_root: Path,
+    references: dict[str, dict[str, Json]],
+) -> dict[str, Json]:
+    plan = by_type(documents, "evaluation-plan")
+    stages = by_type(documents, "stage-registry")
+    assessors = by_type(documents, "assessor-profile")
+    environment = by_type(documents, "environment-profile")
+    sandbox = by_type(documents, "sandbox-profile")
+    return compile_invocation_set(
+        invocation_set_id=f"invocations-{plan['planId']}",
+        plan=plan,
+        plan_ref=references[plan["planId"]],
+        stage_registry=stages,
+        stage_registry_ref=references[stages["registryId"]],
+        assessor_profile=assessors,
+        assessor_profile_ref=references[assessors["profileId"]],
+        repository_ref=repository_tree_ref(repository_root),
+        environment_ref=environment["environmentId"],
+        sandbox_ref=sandbox["sandboxId"],
+    )
+
+
+@app.command
+def plan(
+    document: Annotated[list[Path], Parameter(help="Validated PPF input bundle.")],
+    *,
+    repository_root: Path,
+) -> int:
+    """Compile and print the deterministic invocation set."""
+    documents = load_valid_bundle(document, repository_root=repository_root)
+    render_json(_compile(documents, repository_root, exact_bundle_refs(document)))
+    return 0
+
+
+@app.command
+def check(
+    document: Annotated[list[Path], Parameter(help="Validated PPF input bundle.")],
+    *,
+    repository_root: Path,
+    tool_environment_root: Path,
+) -> int:
+    """Verify the locked tool environment and sandbox capabilities."""
+    documents = load_valid_bundle(document, repository_root=repository_root)
+    manifest = by_type(documents, "tool-environment-manifest")
+    ToolEnvironmentVerifier().verify(manifest, tool_environment_root)
+    sandbox = by_type(documents, "sandbox-profile")
+    support = BubblewrapSandbox().evaluate_support(sandbox["profile"])
+    render_json({"valid": support.supported, "missing": list(support.missing)})
+    return 0 if support.supported else 1
+
+
+@app.command
+def run(
+    document: Annotated[list[Path], Parameter(help="Validated PPF input bundle.")],
+    *,
+    repository_root: Path,
+    output_dir: Path,
+    tool_environment_root: Path,
+) -> int:
+    """Execute eligible invocations and write evidence artifacts."""
+    documents = load_valid_bundle(document, repository_root=repository_root)
+    references = exact_bundle_refs(document)
+    plan_document = by_type(documents, "evaluation-plan")
+    invocation_set = next(
+        (
+            item
+            for item in documents.values()
+            if item.get("documentType") == "evaluation-invocation-set"
+        ),
+        None,
+    ) or _compile(documents, repository_root, references)
+    binding = by_type(documents, "evaluation-input-binding")
+    manifest = by_type(documents, "evaluation-input-manifest")
+    request = AssessmentRequest(
+        repository_root=repository_root.resolve(),
+        tool_environment_root=tool_environment_root.resolve(),
+        input_manifest_digest=references[manifest["manifestId"]]["digest"],
+        input_binding_ref=references[binding["bindingId"]],
+        input_binding_digest=references[binding["bindingId"]]["digest"],
+        invocation_set=invocation_set,
+        plan=plan_document,
+        assessor_profile=by_type(documents, "assessor-profile"),
+        environment_profile=by_type(documents, "environment-profile"),
+        sandbox_profile=by_type(documents, "sandbox-profile"),
+        tool_environment_manifest=by_type(documents, "tool-environment-manifest"),
+    )
+    store = ContentAddressedArtifactStore(output_dir)
+    verifier = ToolEnvironmentVerifier()
+    with tempfile.TemporaryDirectory(prefix="ppf-tools-") as temporary:
+        materialized_root = Path(temporary) / "root"
+        try:
+            verifier.materialize(
+                request.tool_environment_manifest,
+                request.tool_environment_root,
+                materialized_root,
+            )
+        except ToolEnvironmentError:
+            materialized_root = request.tool_environment_root
+        result = AssessmentService().run(
+            replace(request, tool_environment_root=materialized_root),
+            assessor_registry=default_assessor_registry(),
+            sandbox=BubblewrapSandbox(),
+            clock=SystemClock(),
+            artifact_store=store,
+            verifier=verifier,
+        )
+    output_dir.mkdir(parents=True, exist_ok=True)
+    stored_artifacts = list(result.artifacts)
+    for envelope in result.envelopes:
+        envelope_bytes = canonical_json_bytes(envelope)
+        stored_artifacts.append(
+            store.put(
+                f"{envelope['envelopeId']}.json",
+                envelope_bytes,
+                role="producer-envelope",
+                media_type="application/json",
+            )
+        )
+        (output_dir / f"{envelope['envelopeId']}.json").write_bytes(envelope_bytes)
+    for attempt in result.attempts:
+        (output_dir / f"{attempt['attemptId']}.json").write_bytes(
+            pretty_json_bytes(attempt)
+        )
+    index = {
+        "operationalSuccess": result.operational_success,
+        "envelopes": list(result.envelopes),
+        "attempts": list(result.attempts),
+    }
+    (output_dir / "assessment-index.json").write_bytes(pretty_json_bytes(index))
+    run_identity = {
+        "runId": "assessment-run",
+        "invocationSetRef": references.get(invocation_set["invocationSetId"])
+        or content_ref(invocation_set["invocationSetId"], invocation_set),
+    }
+    manifest_document = artifact_manifest(
+        manifest_id="manifest-assessment-run",
+        run_ref=content_ref(
+            "assessment-run",
+            run_identity,
+            uri="embedded:assessment-run",
+        ),
+        created_at=SystemClock().now(),
+        artifacts=stored_artifacts,
+    )
+    manifest_path = output_dir / "manifest-assessment-run.json"
+    manifest_path.write_bytes(pretty_json_bytes(manifest_document))
+    render_json(
+        {
+            "operationalSuccess": result.operational_success,
+            "envelopes": len(result.envelopes),
+            "attempts": len(result.attempts),
+            "index": str(output_dir / "assessment-index.json"),
+            "artifactManifest": str(manifest_path),
+        }
+    )
+    return 0 if result.operational_success else 1
+
+
+@app.command
+def replay(counterexample: Path) -> int:
+    """Print the digest-bound replay invocation from a counterexample."""
+    payload = json.loads(counterexample.read_bytes())
+    render_json({"replayInvocation": payload["replayInvocation"]})
+    return 0
+
+
+@app.command
+def inspect(output_dir: Path) -> int:
+    """Summarize a prior assessment output directory."""
+    payload = json.loads((output_dir / "assessment-index.json").read_bytes())
+    render_json(
+        {
+            "operationalSuccess": payload["operationalSuccess"],
+            "envelopes": len(payload["envelopes"]),
+            "attempts": len(payload["attempts"]),
+        }
+    )
+    return 0
+
+
+def main() -> int:
+    return app()

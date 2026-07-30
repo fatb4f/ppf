@@ -233,7 +233,8 @@ def build_evidence() -> list[EvidenceRecord]:
         SCHEMAS / "extensions" / "python-policy-implementation.extension.schema.json",
         SCHEMAS / "extensions" / "python-policy-ppf.eval-workflow-extension.schema.json",
         SCHEMAS / "extensions" / "python-policy-ppf.schema-conformance-extension.schema.json",
-        SCHEMAS / "extensions" / "python-policy-ppf.composed.schema.json",
+        SCHEMAS / "extensions" / "python-policy-ppf.execution-repair-extension.schema.json",
+        SCHEMAS / "extensions" / "python-policy-ppf.composed-0.3.schema.json",
     ]
     checks = [
         _check(

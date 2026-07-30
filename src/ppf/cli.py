@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import sys
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from pathlib import Path
 from typing import Annotated, Protocol
 
@@ -25,7 +25,7 @@ class ValidationService(Protocol):
     ) -> ValidationResult: ...
 
 
-def _write_json(payload: dict[str, object], write: Callable[[str], object]) -> None:
+def _write_json(payload: Mapping[str, object], write: Callable[[str], object]) -> None:
     write(json.dumps(payload, indent=None if payload.get("valid", True) else 2))
 
 

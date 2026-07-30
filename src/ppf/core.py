@@ -50,6 +50,16 @@ DOCUMENT_IDS = {
     "schema-conformance-policy": "policyId",
     "projection-conformance-report": "reportId",
     "generated-fixture-run": "runId",
+    "evaluation-invocation-set": "invocationSetId",
+    "tool-environment-manifest": "manifestId",
+    "environment-profile": "environmentId",
+    "assessor-profile": "profileId",
+    "sandbox-profile": "sandboxId",
+    "operational-attempt": "attemptId",
+    "artifact-manifest": "manifestId",
+    "evaluation-semantic-projection": "projectionId",
+    "repair-decision": "decisionId",
+    "repair-application-record": "recordId",
 }
 RFC3339 = re.compile(
     r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}"
@@ -607,6 +617,13 @@ def _internal_content_refs(
         ),
         "projection-conformance-report": (("policyRef",),),
         "generated-fixture-run": (("policyRef",),),
+        "evaluation-invocation-set": (
+            ("planRef",),
+            ("stageRegistryRef",),
+            ("assessorProfileRef",),
+        ),
+        "environment-profile": (("toolEnvironmentRef",),),
+        "repair-application-record": (("decisionRef",),),
     }
     paths = list(fixed.get(str(document_type), ()))
 

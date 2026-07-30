@@ -41,7 +41,7 @@ def test_stale_local_configuration_digest_is_rejected(tmp_path: Path) -> None:
 
 def test_composed_discriminator_targets_are_canonical() -> None:
     composed = json.loads(
-        (SCHEMAS / "extensions" / "python-policy-ppf.composed.schema.json").read_text(
+        (SCHEMAS / "extensions" / "python-policy-ppf.composed-0.3.schema.json").read_text(
             encoding="utf-8"
         )
     )
@@ -66,13 +66,20 @@ def test_composed_discriminator_targets_are_canonical() -> None:
                     SCHEMAS / "extensions" / "python-policy-ppf.eval-workflow-extension.schema.json"
                 ).read_text(encoding="utf-8")
             ),
-            json.loads(
-                (
-                    SCHEMAS
-                    / "extensions"
-                    / "python-policy-ppf.schema-conformance-extension.schema.json"
-                ).read_text(encoding="utf-8")
-            ),
+                json.loads(
+                    (
+                        SCHEMAS
+                        / "extensions"
+                        / "python-policy-ppf.schema-conformance-extension.schema.json"
+                    ).read_text(encoding="utf-8")
+                ),
+                json.loads(
+                    (
+                        SCHEMAS
+                        / "extensions"
+                        / "python-policy-ppf.execution-repair-extension.schema.json"
+                    ).read_text(encoding="utf-8")
+                ),
         )
     }
     for target in mappings.values():

@@ -195,7 +195,7 @@ class SchemaCatalog:
     def entry(self, document_type: str) -> CatalogEntry | None:
         return self._entries.get(document_type)
 
-    def validator(self, document_type: str) -> Draft202012Validator:
+    def validator(self, document_type: str) -> Any:
         entry = self._entries[document_type]
         return Draft202012Validator(
             {"$ref": entry.target},

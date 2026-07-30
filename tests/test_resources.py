@@ -16,8 +16,11 @@ EXPECTED = {
     "extensions/python-policy-ppf.schema-conformance-extension.schema.json": (
         "urn:python-policy-ppf:extension:schema-conformance:0.2.0"
     ),
-    "extensions/python-policy-ppf.composed.schema.json": (
-        "urn:python-policy-ppf:composed:extensions:0.2.0"
+    "extensions/python-policy-ppf.execution-repair-extension.schema.json": (
+        "urn:python-policy-ppf:extension:execution-repair:0.1.0"
+    ),
+    "extensions/python-policy-ppf.composed-0.3.schema.json": (
+        "urn:python-policy-ppf:composed:extensions:0.3.0"
     ),
 }
 
@@ -27,7 +30,8 @@ def test_packaged_resource_names_and_ids_are_canonical() -> None:
     registry = json.loads(root.joinpath("schema-registry.json").read_text(encoding="utf-8"))
     assert {resource["path"]: resource["uri"] for resource in registry["resources"]} == EXPECTED
     assert (
-        registry["composedSchema"] == EXPECTED["extensions/python-policy-ppf.composed.schema.json"]
+        registry["composedSchema"]
+        == EXPECTED["extensions/python-policy-ppf.composed-0.3.schema.json"]
     )
     for path, schema_id in EXPECTED.items():
         resource = root
