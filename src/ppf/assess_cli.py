@@ -14,6 +14,7 @@ from .artifacts import (
     ContentAddressedArtifactStore,
     artifact_manifest,
     canonical_json_bytes,
+    materialize_repository_snapshot,
     pretty_json_bytes,
     repository_tree_ref,
 )
@@ -127,20 +128,38 @@ def run(
         sandbox_profile=by_type(documents, "sandbox-profile"),
         tool_environment_manifest=by_type(documents, "tool-environment-manifest"),
     )
-    store = ContentAddressedArtifactStore(output_dir)
     verifier = ToolEnvironmentVerifier()
-    with tempfile.TemporaryDirectory(prefix="ppf-tools-") as temporary:
-        materialized_root = Path(temporary) / "root"
+    with tempfile.TemporaryDirectory(prefix="ppf-assessment-") as temporary:
+        temporary_root = Path(temporary)
+        materialized_root = temporary_root / "tools"
+        repository_snapshot = temporary_root / "repository"
+        preflight_errors: list[str] = []
         try:
             verifier.materialize(
                 request.tool_environment_manifest,
                 request.tool_environment_root,
                 materialized_root,
             )
-        except ToolEnvironmentError:
+        except ToolEnvironmentError as error:
+            preflight_errors.append(f"tool snapshot materialization failed: {error}")
             materialized_root = request.tool_environment_root
+        try:
+            materialize_repository_snapshot(
+                request.repository_root,
+                repository_snapshot,
+                expected_ref=invocation_set["repositoryRef"],
+            )
+        except (OSError, ValueError) as error:
+            preflight_errors.append(f"repository snapshot materialization failed: {error}")
+            repository_snapshot = request.repository_root
+        store = ContentAddressedArtifactStore(output_dir)
         result = AssessmentService().run(
-            replace(request, tool_environment_root=materialized_root),
+            replace(
+                request,
+                repository_root=repository_snapshot,
+                tool_environment_root=materialized_root,
+                preflight_error="; ".join(preflight_errors) or None,
+            ),
             assessor_registry=default_assessor_registry(),
             sandbox=BubblewrapSandbox(),
             clock=SystemClock(),
@@ -149,27 +168,19 @@ def run(
         )
     output_dir.mkdir(parents=True, exist_ok=True)
     stored_artifacts = list(result.artifacts)
+    stored_artifacts.append(
+        store.put(
+            f"{invocation_set['invocationSetId']}.json",
+            canonical_json_bytes(invocation_set),
+            role="execution-metadata",
+            media_type="application/json",
+        )
+    )
     for envelope in result.envelopes:
         envelope_bytes = canonical_json_bytes(envelope)
-        stored_artifacts.append(
-            store.put(
-                f"{envelope['envelopeId']}.json",
-                envelope_bytes,
-                role="producer-envelope",
-                media_type="application/json",
-            )
-        )
         (output_dir / f"{envelope['envelopeId']}.json").write_bytes(envelope_bytes)
     for attempt in result.attempts:
-        (output_dir / f"{attempt['attemptId']}.json").write_bytes(
-            pretty_json_bytes(attempt)
-        )
-    index = {
-        "operationalSuccess": result.operational_success,
-        "envelopes": list(result.envelopes),
-        "attempts": list(result.attempts),
-    }
-    (output_dir / "assessment-index.json").write_bytes(pretty_json_bytes(index))
+        (output_dir / f"{attempt['attemptId']}.json").write_bytes(pretty_json_bytes(attempt))
     run_identity = {
         "runId": "assessment-run",
         "invocationSetRef": references.get(invocation_set["invocationSetId"])
@@ -187,6 +198,21 @@ def run(
     )
     manifest_path = output_dir / "manifest-assessment-run.json"
     manifest_path.write_bytes(pretty_json_bytes(manifest_document))
+    index = {
+        "operationalSuccess": result.operational_success,
+        "artifactManifest": str(manifest_path),
+        "envelopeRefs": [
+            item["contentRef"]
+            for item in manifest_document["artifacts"]
+            if item["role"] == "producer-envelope"
+        ],
+        "attemptRefs": [
+            item["contentRef"]
+            for item in manifest_document["artifacts"]
+            if item["role"] == "operational-attempt"
+        ],
+    }
+    (output_dir / "assessment-index.json").write_bytes(pretty_json_bytes(index))
     render_json(
         {
             "operationalSuccess": result.operational_success,
@@ -214,8 +240,8 @@ def inspect(output_dir: Path) -> int:
     render_json(
         {
             "operationalSuccess": payload["operationalSuccess"],
-            "envelopes": len(payload["envelopes"]),
-            "attempts": len(payload["attempts"]),
+            "envelopes": len(payload["envelopeRefs"]),
+            "attempts": len(payload["attemptRefs"]),
         }
     )
     return 0

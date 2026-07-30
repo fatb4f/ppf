@@ -69,9 +69,7 @@ def test_judge_separates_pass_failure_and_missing_evidence() -> None:
     assert inconclusive.verdict == "inconclusive"
     assert inconclusive.report["itemVerdicts"][0]["missingEvidence"]
     assert not list(
-        SchemaCatalog.load()
-        .validator("qualification-report")
-        .iter_errors(inconclusive.report)
+        SchemaCatalog.load().validator("qualification-report").iter_errors(inconclusive.report)
     )
     assert not validate_semantics(inconclusive.report)
 
@@ -89,11 +87,39 @@ def test_active_waiver_preserves_underlying_failure() -> None:
             "uri": "https://example.invalid/authorization",
         },
     }
-    result = QualificationService().run(
-        _request(status="failed", exit_code=1, waivers=(waiver,))
-    )
+    result = QualificationService().run(_request(status="failed", exit_code=1, waivers=(waiver,)))
     verdict = result.report["itemVerdicts"][0]
     assert result.verdict == "pass"
     assert verdict["verdict"] == "waived"
     assert verdict["underlyingVerdict"] == "fail"
     assert not validate_semantics(result.report)
+
+
+def test_rejected_required_case_prevents_pass() -> None:
+    request = _request(status="passed", exit_code=0)
+    second_case = {
+        **request.plan["cases"][0],
+        "id": "case-ho-01-source",
+        "probe": {
+            "probeRef": "missing-source-probe",
+            "configuration": {"expectExitCode": 0, "minimumReliability": "R3"},
+        },
+    }
+    second_observation = {
+        **request.observations[0],
+        "id": "observation-source",
+        "caseRef": second_case["id"],
+    }
+    result = QualificationService().run(
+        QualificationRequest(
+            **{
+                **request.__dict__,
+                "plan": {"cases": [request.plan["cases"][0], second_case]},
+                "observations": (*request.observations, second_observation),
+            }
+        )
+    )
+    verdict = result.report["itemVerdicts"][0]
+    assert result.verdict == "inconclusive"
+    assert verdict["rejectedEvidenceRefs"]
+    assert verdict["missingEvidence"]

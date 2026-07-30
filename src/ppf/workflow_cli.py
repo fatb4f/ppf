@@ -136,6 +136,29 @@ def repair(
     return 0
 
 
+@implement_app.command(name="iteration")
+def record_iteration(
+    workflow: Path,
+    implementation_iteration: Path,
+    *,
+    output: Path,
+) -> int:
+    """Record a targeted replay judgment as an implementation iteration."""
+    result = WorkflowService().record_implementation(
+        _read(workflow),
+        iteration=_read(implementation_iteration),
+    )
+    _write(output, result)
+    render_json(
+        {
+            "workflow": str(output),
+            "currentState": result["currentState"],
+            "implementationIterations": len(result["implementationIterations"]),
+        }
+    )
+    return 0
+
+
 @implement_app.command
 def complete(
     workflow: Path,

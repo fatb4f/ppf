@@ -8,7 +8,7 @@ import signal
 import subprocess
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Protocol
 
 
@@ -85,6 +85,33 @@ class SandboxBackend(Protocol):
     ) -> RawExecutionResult: ...
 
 
+def _writable_mount(
+    repository_root: Path,
+    value: object,
+) -> tuple[Path, PurePosixPath]:
+    """Resolve one declared writable mount without permitting boundary escape."""
+    if not isinstance(value, str) or not value or "\x00" in value:
+        raise SandboxPreparationError(f"unsafe writable path {value!r}")
+    relative = PurePosixPath(value)
+    if (
+        relative.is_absolute()
+        or relative == PurePosixPath(".")
+        or relative.as_posix() != value
+        or ".." in relative.parts
+        or any(part in ("", ".") for part in relative.parts)
+    ):
+        raise SandboxPreparationError(f"unsafe writable path {value!r}")
+    root = repository_root.resolve(strict=True)
+    candidate = root.joinpath(*relative.parts)
+    resolved = candidate.resolve(strict=False)
+    if not resolved.is_relative_to(root):
+        raise SandboxPreparationError(f"writable path escapes repository: {value!r}")
+    target = PurePosixPath("/workspace").joinpath(*relative.parts)
+    if not target.is_relative_to(PurePosixPath("/workspace")):
+        raise SandboxPreparationError(f"writable target escapes workspace: {value!r}")
+    return resolved, target
+
+
 def _limit_process(profile: dict[str, object]) -> Callable[[], None]:
     def apply() -> None:
         file_size = profile.get("fileSizeLimitBytes")
@@ -132,10 +159,8 @@ class BubblewrapSandbox:
             "repository-read-only": capabilities.repository_read_only,
             "pid-namespace": capabilities.pid_namespace,
             "user-namespace": capabilities.user_namespace,
-            "timeout": isinstance(profile.get("timeoutSeconds"), int)
-            and capabilities.timeout,
-            "memory-enforcement": profile.get("memoryLimitBytes") is None
-            or capabilities.cgroup_v2,
+            "timeout": isinstance(profile.get("timeoutSeconds"), int) and capabilities.timeout,
+            "memory-enforcement": profile.get("memoryLimitBytes") is None or capabilities.cgroup_v2,
         }
         missing = tuple(name for name, supported in required.items() if not supported)
         return SupportDecision(not missing, missing)
@@ -173,9 +198,12 @@ class BubblewrapSandbox:
         if not isinstance(writable_paths, list):
             raise TypeError("writablePaths must be a list")
         for writable in writable_paths:
-            path = invocation.repository_root / str(writable)
-            target = Path("/workspace") / str(writable)
+            path, target = _writable_mount(invocation.repository_root, writable)
             path.mkdir(parents=True, exist_ok=True)
+            if path.resolve(strict=True) != path:
+                raise SandboxPreparationError(
+                    f"writable path changed during preparation: {writable!r}"
+                )
             arguments.extend(["--bind", str(path), str(target)])
         try:
             relative_working_directory = invocation.working_directory.relative_to(
@@ -183,9 +211,7 @@ class BubblewrapSandbox:
             )
         except ValueError as error:
             raise RuntimeError("working directory escapes repository root") from error
-        arguments.extend(
-            ["--chdir", str(Path("/workspace") / relative_working_directory)]
-        )
+        arguments.extend(["--chdir", str(Path("/workspace") / relative_working_directory)])
         for name, value in sorted(invocation.environment.items()):
             arguments.extend(["--setenv", name, value])
         arguments.extend(["--", *invocation.argv])

@@ -2,7 +2,15 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from ppf.artifacts import ContentAddressedArtifactStore
+import pytest
+
+from ppf.artifacts import (
+    ContentAddressedArtifactStore,
+    artifact_manifest,
+    canonical_json_bytes,
+    pretty_json_bytes,
+    repository_tree_ref,
+)
 from ppf.assessment import AssessmentRequest, AssessmentService
 from ppf.assessors import default_assessor_registry
 from ppf.execution import (
@@ -11,6 +19,8 @@ from ppf.execution import (
     SandboxCapabilities,
     SupportDecision,
 )
+from ppf.invocations import invocation_id
+from ppf.qualify_cli import _verified_assessment
 from ppf.tool_environment import ResolvedEntrypoint
 
 DIGEST = "sha256:" + ("1" * 64)
@@ -69,6 +79,11 @@ class FakeSandbox:
         )
 
 
+class FailingArtifactStore(ContentAddressedArtifactStore):
+    def put(self, *args, **kwargs):
+        raise OSError("disk full")
+
+
 def _request(root: Path) -> AssessmentRequest:
     reference = {"id": "binding", "digest": DIGEST}
     return AssessmentRequest(
@@ -80,29 +95,50 @@ def _request(root: Path) -> AssessmentRequest:
         invocation_set={
             "invocations": [
                 {
-                    "invocationId": "invoke-" + ("1" * 64),
+                    "invocationId": invocation_id("case", "pytest-assessor"),
+                    "sequence": 10,
                     "caseRef": "case",
-                    "stageRef": "behavioral",
+                    "stageRef": "behavioral-examples",
                     "assessorRef": "pytest-assessor",
                     "assessorKind": "pytest",
                     "executableRef": "pytest-tool",
                     "argv": ["pytest-tool", "-q"],
                     "workingDirectoryRef": "repository-root",
+                    "environmentRef": "environment",
+                    "sandboxRef": "sandbox",
+                    "adapterConfig": {},
                 }
-            ]
+            ],
+            "documentType": "evaluation-invocation-set",
+            "schemaVersion": "0.1.0",
+            "invocationSetId": "invocations-test",
+            "planRef": {"id": "plan", "digest": DIGEST},
+            "stageRegistryRef": {"id": "stages", "digest": DIGEST},
+            "assessorProfileRef": {"id": "assessors", "digest": DIGEST},
+            "repositoryRef": repository_tree_ref(root),
         },
         plan={
+            "documentType": "evaluation-plan",
+            "schemaVersion": "0.2.0",
+            "planId": "plan",
             "cases": [
                 {
                     "id": "case",
                     "claimRef": "HO-01",
+                    "stage": "behavioral-examples",
                     "subject": {"id": "decorator"},
                     "fixture": {"id": "ordinary"},
-                    "probe": {"probeRef": "pytest-probe"},
+                    "probe": {
+                        "probeRef": "pytest-probe",
+                        "configuration": {"argv": ["pytest-tool", "-q"]},
+                    },
                 }
-            ]
+            ],
         },
         assessor_profile={
+            "documentType": "assessor-profile",
+            "schemaVersion": "0.1.0",
+            "profileId": "assessors",
             "assessors": [
                 {
                     "id": "pytest-assessor",
@@ -118,11 +154,20 @@ def _request(root: Path) -> AssessmentRequest:
                         "digest": DIGEST,
                         "uri": "https://example.invalid/normalizer",
                     },
+                    "probeRefs": ["pytest-probe"],
                 }
-            ]
+            ],
         },
-        environment_profile={"variables": {}},
-        sandbox_profile={"profile": {"timeoutSeconds": 10}},
+        environment_profile={
+            "documentType": "environment-profile",
+            "environmentId": "environment",
+            "variables": {},
+        },
+        sandbox_profile={
+            "documentType": "sandbox-profile",
+            "sandboxId": "sandbox",
+            "profile": {"timeoutSeconds": 10},
+        },
         tool_environment_manifest={},
     )
 
@@ -157,3 +202,148 @@ def test_captured_assessor_failure_is_operationally_successful(tmp_path: Path) -
     assert result.observations[0]["status"] == "failed"
     assert len(result.envelopes) == 1
     assert len(sandbox.executed) == 1
+
+
+def test_declared_binding_mismatch_prevents_execution(tmp_path: Path) -> None:
+    request = _request(tmp_path)
+    request.invocation_set["invocations"][0]["environmentRef"] = "unrelated"
+    sandbox = FakeSandbox(True)
+    result = AssessmentService().run(
+        request,
+        assessor_registry=default_assessor_registry(),
+        sandbox=sandbox,
+        clock=FixedClock(),
+        artifact_store=ContentAddressedArtifactStore(tmp_path / "artifacts"),
+        verifier=FakeVerifier(tmp_path),
+    )
+    assert not result.operational_success
+    assert result.attempts[0]["diagnostics"][0]["code"] == ("environment-binding-mismatch")
+    assert not sandbox.executed
+
+
+def test_repository_drift_prevents_execution(tmp_path: Path) -> None:
+    request = _request(tmp_path)
+    (tmp_path / "untracked.txt").write_text("changed", encoding="utf-8")
+    sandbox = FakeSandbox(True)
+    result = AssessmentService().run(
+        request,
+        assessor_registry=default_assessor_registry(),
+        sandbox=sandbox,
+        clock=FixedClock(),
+        artifact_store=ContentAddressedArtifactStore(tmp_path / "artifacts"),
+        verifier=FakeVerifier(tmp_path),
+    )
+    assert not result.operational_success
+    assert result.attempts[0]["status"] == "integrity-failed"
+    assert not sandbox.executed
+
+
+def test_artifact_failure_is_contained_per_invocation(tmp_path: Path) -> None:
+    sandbox = FakeSandbox(True)
+    result = AssessmentService().run(
+        _request(tmp_path),
+        assessor_registry=default_assessor_registry(),
+        sandbox=sandbox,
+        clock=FixedClock(),
+        artifact_store=FailingArtifactStore(tmp_path / "artifacts"),
+        verifier=FakeVerifier(tmp_path),
+    )
+    assert not result.operational_success
+    assert not result.envelopes
+    assert result.attempts[0]["status"] == "artifact-failed"
+    assert result.attempts[0]["phase"] == "artifact-persistence"
+
+
+def test_missing_assessor_implementation_is_operational_failure(
+    tmp_path: Path,
+) -> None:
+    sandbox = FakeSandbox(True)
+    result = AssessmentService().run(
+        _request(tmp_path),
+        assessor_registry={},
+        sandbox=sandbox,
+        clock=FixedClock(),
+        artifact_store=ContentAddressedArtifactStore(tmp_path / "artifacts"),
+        verifier=FakeVerifier(tmp_path),
+    )
+    assert not result.operational_success
+    assert result.attempts[0]["diagnostics"][0]["code"] == ("implementation-unavailable")
+    assert not sandbox.executed
+
+
+def test_qualification_reads_verified_manifest_objects_not_mutable_index(
+    tmp_path: Path,
+) -> None:
+    assessment_root = tmp_path / "assessment"
+    store = ContentAddressedArtifactStore(assessment_root)
+    request = _request(tmp_path)
+    result = AssessmentService().run(
+        request,
+        assessor_registry=default_assessor_registry(),
+        sandbox=FakeSandbox(True),
+        clock=FixedClock(),
+        artifact_store=store,
+        verifier=FakeVerifier(tmp_path),
+    )
+    invocation_artifact = store.put(
+        "invocations-test.json",
+        canonical_json_bytes(request.invocation_set),
+        role="execution-metadata",
+        media_type="application/json",
+    )
+    manifest = artifact_manifest(
+        manifest_id="manifest-assessment-run",
+        run_ref={"id": "assessment-run", "digest": DIGEST},
+        created_at="2026-07-29T12:00:00Z",
+        artifacts=[*result.artifacts, invocation_artifact],
+    )
+    (assessment_root / "manifest-assessment-run.json").write_bytes(pretty_json_bytes(manifest))
+    index = assessment_root / "assessment-index.json"
+    index.write_text('{"envelopes": [{"observations": [{"status": "passed"}]}]}')
+    documents = {
+        "binding": {
+            "documentType": "evaluation-input-binding",
+            "bindingId": "binding",
+        },
+        "manifest": {
+            "documentType": "evaluation-input-manifest",
+            "manifestId": "manifest",
+        },
+        "plan": request.plan,
+        "stages": {
+            "documentType": "stage-registry",
+            "registryId": "stages",
+            "stages": [{"id": "behavioral-examples", "kind": "behavioral"}],
+        },
+        "assessors": request.assessor_profile,
+        "environment": request.environment_profile,
+        "sandbox": request.sandbox_profile,
+    }
+    references = {
+        "binding": {"id": "binding", "digest": DIGEST},
+        "manifest": {"id": "manifest", "digest": DIGEST},
+        "plan": {"id": "plan", "digest": DIGEST},
+        "stages": {"id": "stages", "digest": DIGEST},
+        "assessors": {"id": "assessors", "digest": DIGEST},
+    }
+    envelopes, observations, attempts = _verified_assessment(
+        index,
+        documents,
+        references,
+    )
+    assert len(envelopes) == 1
+    assert observations[0]["status"] == "failed"
+    assert not attempts
+
+    envelope_entry = next(
+        item for item in manifest["artifacts"] if item["role"] == "producer-envelope"
+    )
+    object_path = (
+        assessment_root
+        / "objects"
+        / "sha256"
+        / envelope_entry["contentRef"]["digest"].removeprefix("sha256:")
+    )
+    object_path.write_bytes(object_path.read_bytes().replace(b'"failed"', b'"passed"'))
+    with pytest.raises(ValueError, match="integrity failure"):
+        _verified_assessment(index, documents, references)

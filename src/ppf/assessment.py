@@ -9,18 +9,20 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from .artifacts import ContentAddressedArtifactStore, StoredArtifact
+from .artifacts import (
+    ContentAddressedArtifactStore,
+    StoredArtifact,
+    repository_tree_ref,
+)
 from .assessors import Assessor, NormalizationContext
 from .execution import (
     Clock,
     PreparedInvocation,
     RawExecutionResult,
     SandboxBackend,
-    SandboxPreparationError,
 )
 from .tool_environment import (
     ResolvedEntrypoint,
-    ToolEnvironmentError,
     ToolEnvironmentVerifier,
 )
 
@@ -50,6 +52,7 @@ class AssessmentRequest:
     environment_profile: dict[str, Json]
     sandbox_profile: dict[str, Json]
     tool_environment_manifest: dict[str, Json]
+    preflight_error: str | None = None
 
 
 @dataclass(frozen=True)
@@ -89,37 +92,73 @@ class AssessmentService:
         artifact_store: ContentAddressedArtifactStore,
         verifier: ToolEnvironmentVerifier,
     ) -> AssessmentResult:
-        environment_error: str | None = None
+        environment_error: str | None = request.preflight_error
         try:
             resolved = verifier.verify(
                 request.tool_environment_manifest,
                 request.tool_environment_root,
             )
-        except ToolEnvironmentError as error:
+        except Exception as error:
             resolved = {}
-            environment_error = str(error)
+            if environment_error is None:
+                environment_error = str(error)
         cases = {case["id"]: case for case in request.plan["cases"]}
-        assessors = {
-            assessor["id"]: assessor
-            for assessor in request.assessor_profile["assessors"]
-        }
+        assessors = {assessor["id"]: assessor for assessor in request.assessor_profile["assessors"]}
         envelopes: list[dict[str, Json]] = []
         attempts: list[dict[str, Json]] = []
         observations: list[dict[str, Json]] = []
         artifacts: list[StoredArtifact] = []
         operational_success = True
+        expected_repository_ref = request.invocation_set.get("repositoryRef")
+        try:
+            actual_repository_ref = repository_tree_ref(request.repository_root)
+            if expected_repository_ref != actual_repository_ref:
+                environment_error = "repository snapshot differs from invocation repositoryRef"
+        except Exception as error:
+            environment_error = f"repository snapshot cannot be verified: {error}"
 
         for invocation in request.invocation_set["invocations"]:
-            descriptor = assessors[invocation["assessorRef"]]
-            entrypoint = resolved.get(invocation["executableRef"])
-            support = sandbox.evaluate_support(request.sandbox_profile["profile"])
+            descriptor = assessors.get(invocation.get("assessorRef"))
+            case = cases.get(invocation.get("caseRef"))
+            assessor = assessor_registry.get(invocation.get("assessorKind"))
+            entrypoint = resolved.get(invocation.get("executableRef"))
             diagnostic: tuple[str, str] | None = None
             status = "unsupported"
             phase = "sandbox-preflight"
             if environment_error is not None:
-                diagnostic = ("tool-environment-integrity", environment_error)
+                diagnostic = ("input-integrity", environment_error)
                 status = "integrity-failed"
-                phase = "tool-environment-preflight"
+                phase = "input-preflight"
+            elif invocation.get("workingDirectoryRef") != "repository-root":
+                diagnostic = (
+                    "working-directory-binding-mismatch",
+                    "workingDirectoryRef must resolve to repository-root",
+                )
+                status = "integrity-failed"
+                phase = "binding-preflight"
+            elif invocation.get("environmentRef") != request.environment_profile.get(
+                "environmentId"
+            ):
+                diagnostic = (
+                    "environment-binding-mismatch",
+                    "environmentRef does not match the supplied environment profile",
+                )
+                status = "integrity-failed"
+                phase = "binding-preflight"
+            elif invocation.get("sandboxRef") != request.sandbox_profile.get("sandboxId"):
+                diagnostic = (
+                    "sandbox-binding-mismatch",
+                    "sandboxRef does not match the supplied sandbox profile",
+                )
+                status = "integrity-failed"
+                phase = "binding-preflight"
+            elif descriptor is None or case is None or assessor is None:
+                diagnostic = (
+                    "implementation-unavailable",
+                    "invocation references an unavailable case, assessor, or implementation",
+                )
+                status = "preparation-failed"
+                phase = "assessor-prepare"
             elif entrypoint is None:
                 diagnostic = (
                     "tool-unavailable",
@@ -127,52 +166,51 @@ class AssessmentService:
                 )
                 status = "tool-unavailable"
                 phase = "tool-preflight"
-            elif not support.supported:
-                diagnostic = (
-                    "required-capability-unavailable",
-                    f"missing sandbox capabilities: {support.missing!r}",
-                )
+            else:
+                try:
+                    support = sandbox.evaluate_support(request.sandbox_profile["profile"])
+                except Exception as error:
+                    diagnostic = ("sandbox-preflight-failed", str(error))
+                    status = "preparation-failed"
+                else:
+                    if not support.supported:
+                        diagnostic = (
+                            "required-capability-unavailable",
+                            f"missing sandbox capabilities: {support.missing!r}",
+                        )
             if diagnostic is not None:
                 operational_success = False
-                attempt = self._attempt(
+                self._record_attempt(
                     invocation,
                     status=status,
                     phase=phase,
                     code=diagnostic[0],
                     message=diagnostic[1],
                     clock=clock,
+                    store=artifact_store,
+                    attempts=attempts,
+                    artifacts=artifacts,
                 )
-                attempt_bytes = __import__("rfc8785").dumps(attempt)
-                artifact = artifact_store.put(
-                    f"{invocation['invocationId']}.attempt.json",
-                    attempt_bytes,
-                    role="operational-attempt",
-                    media_type="application/json",
-                )
-                artifacts.append(artifact)
-                attempts.append(attempt)
                 continue
 
             assert isinstance(entrypoint, ResolvedEntrypoint)
+            assert descriptor is not None
+            assert case is not None
+            assert assessor is not None
             declared_argv = invocation["argv"]
             if declared_argv[0] != descriptor["executableRef"]:
                 operational_success = False
-                attempt = self._attempt(
+                self._record_attempt(
                     invocation,
                     status="preparation-failed",
                     phase="assessor-prepare",
                     code="entrypoint-mismatch",
                     message="argv[0] must equal the locked executable reference",
                     clock=clock,
+                    store=artifact_store,
+                    attempts=attempts,
+                    artifacts=artifacts,
                 )
-                artifact = artifact_store.put(
-                    f"{invocation['invocationId']}.attempt.json",
-                    __import__("rfc8785").dumps(attempt),
-                    role="operational-attempt",
-                    media_type="application/json",
-                )
-                artifacts.append(artifact)
-                attempts.append(attempt)
                 continue
             prepared = PreparedInvocation(
                 invocation_id=invocation["invocationId"],
@@ -188,34 +226,51 @@ class AssessmentService:
                     request.sandbox_profile["profile"],
                     clock=clock,
                 )
-            except (OSError, SandboxPreparationError) as error:
+            except Exception as error:
                 operational_success = False
-                attempt = self._attempt(
+                self._record_attempt(
                     invocation,
                     status="preparation-failed",
                     phase="sandbox-launch",
                     code="sandbox-launch-failed",
                     message=str(error),
                     clock=clock,
+                    store=artifact_store,
+                    attempts=attempts,
+                    artifacts=artifacts,
                 )
-                artifact = artifact_store.put(
-                    f"{invocation['invocationId']}.attempt.json",
-                    __import__("rfc8785").dumps(attempt),
-                    role="operational-attempt",
-                    media_type="application/json",
-                )
-                artifacts.append(artifact)
-                attempts.append(attempt)
                 continue
-            emitted = self._emit_launched(
-                request,
-                invocation,
-                descriptor,
-                cases[invocation["caseRef"]],
-                result,
-                assessor_registry[invocation["assessorKind"]],
-                artifact_store,
-            )
+            try:
+                emitted = self._emit_launched(
+                    request,
+                    invocation,
+                    descriptor,
+                    case,
+                    result,
+                    assessor,
+                    artifact_store,
+                )
+            except Exception as error:
+                operational_success = False
+                artifact_failure = isinstance(error, OSError)
+                self._record_attempt(
+                    invocation,
+                    status="artifact-failed" if artifact_failure else "preparation-failed",
+                    phase=(
+                        "artifact-persistence" if artifact_failure else "evidence-normalization"
+                    ),
+                    code=(
+                        "artifact-persistence-failed"
+                        if artifact_failure
+                        else "normalization-failed"
+                    ),
+                    message=str(error) or type(error).__name__,
+                    clock=clock,
+                    store=artifact_store,
+                    attempts=attempts,
+                    artifacts=artifacts,
+                )
+                continue
             envelopes.append(emitted[0])
             observations.extend(emitted[1])
             artifacts.extend(emitted[2])
@@ -226,6 +281,41 @@ class AssessmentService:
             observations=tuple(observations),
             artifacts=tuple(artifacts),
         )
+
+    @classmethod
+    def _record_attempt(
+        cls,
+        invocation: dict[str, Json],
+        *,
+        status: str,
+        phase: str,
+        code: str,
+        message: str,
+        clock: Clock,
+        store: ContentAddressedArtifactStore,
+        attempts: list[dict[str, Json]],
+        artifacts: list[StoredArtifact],
+    ) -> None:
+        """Always retain the operational result, even when its store is failing."""
+        attempt = cls._attempt(
+            invocation,
+            status=status,
+            phase=phase,
+            code=code,
+            message=message,
+            clock=clock,
+        )
+        attempts.append(attempt)
+        try:
+            artifact = store.put(
+                f"{invocation['invocationId']}.attempt.json",
+                __import__("rfc8785").dumps(attempt),
+                role="operational-attempt",
+                media_type="application/json",
+            )
+        except Exception:
+            return
+        artifacts.append(artifact)
 
     @staticmethod
     def _attempt(
@@ -291,6 +381,11 @@ class AssessmentService:
             "invocation": {
                 "argv": invocation["argv"],
                 "workingDirectoryRef": invocation["workingDirectoryRef"],
+                "environmentAllowlist": sorted(request.environment_profile["variables"]),
+                "inputArtifactRefs": [
+                    invocation["environmentRef"],
+                    invocation["sandboxRef"],
+                ],
             },
             "result": {
                 "status": result.status,
@@ -323,9 +418,7 @@ class AssessmentService:
             "executions": [
                 {
                     "record": record,
-                    "invocationRef": _document_ref(
-                        invocation["invocationId"], invocation
-                    ),
+                    "invocationRef": _document_ref(invocation["invocationId"], invocation),
                     "rawArtifactRefs": [_content_ref(stdout), _content_ref(stderr)],
                 }
             ],
@@ -336,4 +429,10 @@ class AssessmentService:
             "oracleResults": [],
             "limitations": [],
         }
-        return envelope, normalized, [stdout, stderr]
+        envelope_artifact = store.put(
+            f"{envelope['envelopeId']}.json",
+            __import__("rfc8785").dumps(envelope),
+            role="producer-envelope",
+            media_type="application/json",
+        )
+        return envelope, normalized, [stdout, stderr, envelope_artifact]

@@ -67,11 +67,7 @@ class WorkflowService:
     def next_action(self, workflow: dict[str, Json]) -> str:
         state = workflow["currentState"]
         if state == "inputs-bound":
-            return (
-                "full-qualification"
-                if workflow["mode"] == "qualification-only"
-                else "baseline"
-            )
+            return "full-qualification" if workflow["mode"] == "qualification-only" else "baseline"
         if state == "baseline-judged":
             baseline = workflow["baseline"]
             return {
@@ -165,6 +161,10 @@ class WorkflowService:
     ) -> dict[str, Json]:
         result = deepcopy(workflow)
         if result["currentState"] == "implementation-running":
+            if not result["implementationIterations"]:
+                raise WorkflowError(
+                    "full qualification requires a recorded implementation iteration"
+                )
             _transition(
                 result,
                 to="full-qualification-running",

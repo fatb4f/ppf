@@ -5,7 +5,8 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-import subprocess
+import shutil
+import stat
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -178,31 +179,72 @@ def pretty_json_bytes(document: dict[str, Json]) -> bytes:
     return (json.dumps(document, indent=2, sort_keys=True) + "\n").encode()
 
 
-def repository_tree_ref(root: Path) -> dict[str, Json]:
-    """Lock the exact Git index paths and working-tree bytes used for assessment."""
-    completed = subprocess.run(
-        ["git", "-C", str(root), "ls-files", "-s", "-z"],
-        capture_output=True,
-        check=True,
-    )
-    fields = completed.stdout.split(b"\0")
+def _repository_rows(root: Path) -> list[dict[str, Json]]:
+    """Describe every non-Git member exposed by a repository snapshot."""
+    root = root.resolve(strict=True)
     rows: list[dict[str, Json]] = []
-    for field in fields:
-        if not field:
-            continue
-        metadata, raw_path = field.split(b"\t", 1)
-        mode, _, stage = metadata.decode("ascii").split()
-        path = raw_path.decode("utf-8")
-        if stage != "0":
-            raise ValueError(f"unmerged repository index entry {path!r}")
-        content = (root / path).read_bytes()
-        rows.append(
-            {
-                "path": path,
-                "mode": mode,
-                "digest": sha256_bytes(content),
-            }
-        )
+    for directory, directory_names, file_names in os.walk(
+        root,
+        topdown=True,
+        followlinks=False,
+    ):
+        current = Path(directory)
+        if current == root:
+            directory_names[:] = [name for name in directory_names if name != ".git"]
+        symlink_directories = [name for name in directory_names if (current / name).is_symlink()]
+        directory_names[:] = [name for name in directory_names if name not in symlink_directories]
+        for name in sorted([*symlink_directories, *file_names]):
+            candidate = current / name
+            relative = candidate.relative_to(root).as_posix()
+            metadata = candidate.lstat()
+            if stat.S_ISLNK(metadata.st_mode):
+                kind = "symlink"
+                content = os.readlink(candidate).encode("utf-8", errors="surrogateescape")
+            elif stat.S_ISREG(metadata.st_mode):
+                kind = "file"
+                content = candidate.read_bytes()
+            else:
+                raise ValueError(f"unsupported repository member {relative!r}")
+            rows.append(
+                {
+                    "path": relative,
+                    "kind": kind,
+                    "mode": metadata.st_mode & 0o777,
+                    "digest": sha256_bytes(content),
+                }
+            )
     rows.sort(key=lambda item: item["path"])
+    return rows
+
+
+def repository_tree_ref(root: Path) -> dict[str, Json]:
+    """Lock every file and symlink that an assessor can see in its snapshot."""
+    rows = _repository_rows(root)
     digest = sha256_bytes(rfc8785.dumps(rows))
     return {"id": "repository-root", "digest": digest, "uri": f"repository:{digest}"}
+
+
+def materialize_repository_snapshot(
+    source_root: Path,
+    destination_root: Path,
+    *,
+    expected_ref: dict[str, Json],
+) -> dict[str, Json]:
+    """Copy and verify the exact repository closure into a disposable root."""
+    source = source_root.resolve(strict=True)
+    before = repository_tree_ref(source)
+    if before != expected_ref:
+        raise ValueError("repository tree differs from invocation repositoryRef")
+    shutil.copytree(
+        source,
+        destination_root,
+        symlinks=True,
+        ignore=shutil.ignore_patterns(".git"),
+    )
+    snapshot_ref = repository_tree_ref(destination_root)
+    if snapshot_ref != expected_ref:
+        raise ValueError("repository changed during snapshot materialization")
+    after = repository_tree_ref(source)
+    if after != before:
+        raise ValueError("repository changed during snapshot materialization")
+    return snapshot_ref

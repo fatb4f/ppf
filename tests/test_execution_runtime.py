@@ -7,8 +7,17 @@ from pathlib import Path
 
 import pytest
 
-from ppf.artifacts import semantic_projection
-from ppf.execution import BubblewrapSandbox, PreparedInvocation
+from ppf.artifacts import (
+    materialize_repository_snapshot,
+    repository_tree_ref,
+    semantic_projection,
+)
+from ppf.execution import (
+    BubblewrapSandbox,
+    PreparedInvocation,
+    SandboxPreparationError,
+    _writable_mount,
+)
 from ppf.invocations import (
     InvocationCompilationError,
     compile_invocation_set,
@@ -128,12 +137,8 @@ def test_tool_environment_verifies_complete_tree_and_rejects_drift(tmp_path: Pat
                 "id": "package",
                 "name": "package",
                 "version": "1",
-                "artifactRefs": [
-                    _raw_ref("package-wheel", "artifacts/package.whl", b"wheel")
-                ],
-                "installedTreeDigest": _file_manifest_digest(
-                    tmp_path, ["lib/package.py"]
-                ),
+                "artifactRefs": [_raw_ref("package-wheel", "artifacts/package.whl", b"wheel")],
+                "installedTreeDigest": _file_manifest_digest(tmp_path, ["lib/package.py"]),
                 "installedFiles": ["lib/package.py"],
                 "dependencyRefs": [],
             }
@@ -253,6 +258,50 @@ def test_bubblewrap_executes_from_locked_root_with_read_only_repository(
     assert result.status == "completed"
 
 
+@pytest.mark.parametrize(
+    "value",
+    ["../escaped", "/absolute", "nested/../escaped", "nested//path", "bad\x00path"],
+)
+def test_writable_mount_rejects_non_normalized_or_escaping_paths(
+    tmp_path: Path,
+    value: str,
+) -> None:
+    with pytest.raises(SandboxPreparationError, match="writable"):
+        _writable_mount(tmp_path, value)
+    assert not (tmp_path.parent / "escaped").exists()
+
+
+def test_writable_mount_rejects_escaping_symlink(tmp_path: Path) -> None:
+    outside = tmp_path.parent / "outside"
+    outside.mkdir(exist_ok=True)
+    (tmp_path / "link").symlink_to(outside, target_is_directory=True)
+    with pytest.raises(SandboxPreparationError, match="escapes repository"):
+        _writable_mount(tmp_path, "link/result")
+
+
+def test_repository_snapshot_covers_untracked_and_ignored_files(tmp_path: Path) -> None:
+    repository = tmp_path / "repository"
+    snapshot = tmp_path / "snapshot"
+    repository.mkdir()
+    (repository / ".git").mkdir()
+    (repository / ".gitignore").write_text("ignored.txt\n", encoding="utf-8")
+    (repository / "tracked.txt").write_text("tracked\n", encoding="utf-8")
+    (repository / "untracked.txt").write_text("first\n", encoding="utf-8")
+    (repository / "ignored.txt").write_text("ignored\n", encoding="utf-8")
+    first = repository_tree_ref(repository)
+    (repository / "untracked.txt").write_text("second\n", encoding="utf-8")
+    assert repository_tree_ref(repository) != first
+    expected = repository_tree_ref(repository)
+    materialize_repository_snapshot(
+        repository,
+        snapshot,
+        expected_ref=expected,
+    )
+    assert repository_tree_ref(snapshot) == expected
+    assert (snapshot / "ignored.txt").read_text(encoding="utf-8") == "ignored\n"
+    assert not (snapshot / ".git").exists()
+
+
 def _run(repository: Path, *arguments: str) -> bytes:
     return subprocess.run(
         ["git", "-C", str(repository), *arguments],
@@ -300,11 +349,14 @@ def test_repair_promotes_verified_tree_without_mutating_checkout(tmp_path: Path)
         applied_at="2026-07-29T12:00:00+00:00",
     )
     assert subject.read_text(encoding="utf-8") == "value = 1\n"
-    assert _run(
-        repository,
-        "show",
-        f"{record['promotedRef']}:src/value.py",
-    ) == b"value = 2\n"
+    assert (
+        _run(
+            repository,
+            "show",
+            f"{record['promotedRef']}:src/value.py",
+        )
+        == b"value = 2\n"
+    )
     assert record["changedPaths"] == ["src/value.py"]
 
     forbidden = {**decision, "decisionId": "repair-forbidden", "permittedPaths": ["tests/"]}
