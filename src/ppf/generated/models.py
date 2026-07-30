@@ -69,6 +69,10 @@ class ContentRef(BaseModel):
     uri: constr(min_length=1) | None = Field(default=None, title='Uri')
 
 
+class OracleRef(RootModel[constr(pattern=r'^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$')]):
+    root: constr(pattern=r'^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$')
+
+
 class EvaluationInputManifestDocument(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -2989,9 +2993,7 @@ class EvaluationCase(BaseModel):
     )
     fixture: FixtureRef
     id: constr(pattern=r'^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$') = Field(..., title='Id')
-    oracleRefs: list[constr(pattern=r'^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$')] = Field(
-        ..., title='Oraclerefs'
-    )
+    oracleRefs: list[OracleRef] = Field(..., title='Oraclerefs')
     probe: ProbeInvocation
     stage: StageId
     subject: SubjectRef

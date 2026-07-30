@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
@@ -27,6 +28,27 @@ _CLOSURE_COMPONENTS = {
     "toolchain": "toolchain",
     "worktree": "worktree",
 }
+_MANIFEST_FIELDS = (
+    "profile",
+    "plan",
+    "worktree",
+    "environment",
+    "toolchain",
+    "invocationSet",
+    "sandboxProfile",
+    "adapterSet",
+)
+_CLOSURE_DOCUMENT_TYPES = {
+    "profile": "generation-policy-profile",
+    "plan": "evaluation-plan",
+    "catalog": "evaluation-evidence-catalog",
+    "stageRegistry": "stage-registry",
+    "environment": "environment-profile",
+    "toolchain": "toolchain-lock",
+    "invocationSet": "evaluation-invocation-set",
+    "sandboxProfile": "sandbox-profile",
+    "adapterSet": "assessor-profile",
+}
 
 
 @dataclass(frozen=True)
@@ -37,9 +59,17 @@ class _ExpectedOccurrence:
 
 def closure_digest(closure: dict[str, Json]) -> str:
     """Return the normative RFC 8785 SHA-256 digest for an input closure."""
-    import hashlib
-
     return "sha256:" + hashlib.sha256(rfc8785.dumps(closure)).hexdigest()
+
+
+def content_refs_match(left: Json, right: Json) -> bool:
+    """Compare the immutable identity of two content references."""
+    return (
+        isinstance(left, dict)
+        and isinstance(right, dict)
+        and left.get("id") == right.get("id")
+        and left.get("digest") == right.get("digest")
+    )
 
 
 def _add_expected(
@@ -131,11 +161,20 @@ def validate_evaluation_semantics(
     errors = {path: [] for path, _, _ in loaded}
     documents: dict[str, dict[str, Json]] = {}
     paths: dict[str, Path] = {}
-    for path, _, document in loaded:
+    references: dict[str, dict[str, str]] = {}
+    by_document_type: dict[str, list[tuple[Path, dict[str, Json]]]] = {}
+    for path, raw, document in loaded:
         identifier = _document_id(document)
         if identifier is not None:
             documents[identifier] = document
             paths[identifier] = path
+            references[identifier] = {
+                "id": identifier,
+                "digest": "sha256:" + hashlib.sha256(raw).hexdigest(),
+            }
+        document_type = document.get("documentType")
+        if isinstance(document_type, str):
+            by_document_type.setdefault(document_type, []).append((path, document))
 
     for path, _, document in loaded:
         if document.get("documentType") != "evaluation-input-binding":
@@ -150,6 +189,44 @@ def validate_evaluation_semantics(
                         f"must equal RFC 8785 closure digest {actual}",
                     )
                 )
+            manifest_ref = closure.get("inputManifest")
+            manifest = (
+                documents.get(manifest_ref.get("id")) if isinstance(manifest_ref, dict) else None
+            )
+            if isinstance(manifest, dict) and manifest.get("documentType") == (
+                "evaluation-input-manifest"
+            ):
+                actual_manifest_ref = references.get(manifest["manifestId"])
+                if not content_refs_match(manifest_ref, actual_manifest_ref):
+                    errors[path].append(
+                        _semantic(
+                            ("closure", "inputManifest"),
+                            "must exactly reference the supplied evaluation input manifest",
+                        )
+                    )
+                for field in _MANIFEST_FIELDS:
+                    if not content_refs_match(closure.get(field), manifest.get(field)):
+                        errors[path].append(
+                            _semantic(
+                                ("closure", field),
+                                f"must equal evaluation input manifest field {field!r}",
+                            )
+                        )
+
+            for field, document_type in _CLOSURE_DOCUMENT_TYPES.items():
+                matches = by_document_type.get(document_type, [])
+                if len(matches) != 1:
+                    continue
+                _, supplied = matches[0]
+                supplied_id = _document_id(supplied)
+                actual_ref = references.get(supplied_id) if supplied_id is not None else None
+                if not content_refs_match(closure.get(field), actual_ref):
+                    errors[path].append(
+                        _semantic(
+                            ("closure", field),
+                            f"must exactly reference the supplied {document_type}",
+                        )
+                    )
 
     for path, _, integrity in loaded:
         if integrity.get("documentType") != "qualification-integrity":

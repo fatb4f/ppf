@@ -255,6 +255,17 @@ def _plan_semantics(document: dict[str, Json]) -> list[ValidationError]:
             errors.append(
                 _semantic(("cases", index, "oracleRefs"), "at least one oracle is required")
             )
+        oracle_refs = case.get("oracleRefs", [])
+        duplicates = sorted(
+            reference for reference, count in Counter(oracle_refs).items() if count > 1
+        )
+        if duplicates:
+            errors.append(
+                _semantic(
+                    ("cases", index, "oracleRefs"),
+                    f"duplicate oracle references are forbidden: {duplicates!r}",
+                )
+            )
     return errors
 
 
@@ -484,6 +495,44 @@ def _toolchain_semantics(document: dict[str, Json]) -> list[ValidationError]:
     return errors
 
 
+def _evidence_catalog_semantics(document: dict[str, Json]) -> list[ValidationError]:
+    rules = document.get("rules", [])
+    _, errors = _unique_ids(rules, ("rules",))
+    selectors: dict[tuple[str, str], list[tuple[int, str | None]]] = {}
+    for index, rule in enumerate(rules):
+        if not isinstance(rule, dict):
+            continue
+        claim_ref = rule.get("claimRef")
+        probe_ref = rule.get("probeRef")
+        oracle_ref = rule.get("oracleRef")
+        if not isinstance(claim_ref, str) or not isinstance(probe_ref, str):
+            continue
+        selectors.setdefault((claim_ref, probe_ref), []).append((index, oracle_ref))
+
+    for (claim_ref, probe_ref), members in selectors.items():
+        counts = Counter(oracle_ref for _, oracle_ref in members)
+        for oracle_ref, count in counts.items():
+            if count > 1:
+                errors.append(
+                    _semantic(
+                        ("rules",),
+                        "duplicate evidence-rule selector for "
+                        f"{(claim_ref, probe_ref, oracle_ref)!r}",
+                    )
+                )
+        wildcard_indexes = [index for index, oracle_ref in members if oracle_ref is None]
+        specific_indexes = [index for index, oracle_ref in members if oracle_ref is not None]
+        if wildcard_indexes and specific_indexes:
+            errors.append(
+                _semantic(
+                    ("rules",),
+                    "ambiguous wildcard and oracle-specific evidence-rule selectors for "
+                    f"{(claim_ref, probe_ref)!r}",
+                )
+            )
+    return errors
+
+
 def validate_semantics(document: dict[str, Json]) -> list[ValidationError]:
     errors = _nonzero_digests(document)
     document_type = document.get("documentType")
@@ -499,6 +548,8 @@ def validate_semantics(document: dict[str, Json]) -> list[ValidationError]:
         errors.extend(_stage_semantics(document))
     elif document_type == "toolchain-lock":
         errors.extend(_toolchain_semantics(document))
+    elif document_type == "evaluation-evidence-catalog":
+        errors.extend(_evidence_catalog_semantics(document))
     elif document_type == "counterexample" and not document.get("replayInvocation"):
         errors.append(_semantic(("replayInvocation",), "counterexample must be replayable"))
     elif document_type == "regression-fixture" and not document.get("fixture", {}).get("claimRefs"):

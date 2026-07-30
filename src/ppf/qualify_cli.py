@@ -25,6 +25,7 @@ from .cli_common import (
     render_json,
 )
 from .core import validate_semantics
+from .evaluation import content_refs_match
 from .invocations import compile_invocation_set
 from .json_input import strict_json_loads
 from .qualification import QualificationRequest, QualificationService
@@ -43,6 +44,108 @@ def _matching_ref(
     expected: dict[str, Json],
 ) -> bool:
     return actual.get("id") == expected.get("id") and actual.get("digest") == expected.get("digest")
+
+
+def _normalization_judgment_ref() -> dict[str, str]:
+    """Bind the complete in-process normalization and judgment closure."""
+    members = {}
+    for name in (
+        "artifacts.py",
+        "assessment.py",
+        "assessors.py",
+        "qualification.py",
+        "qualify_cli.py",
+    ):
+        source = Path(__file__).with_name(name).read_bytes()
+        members[name] = "sha256:" + hashlib.sha256(source).hexdigest()
+    return {
+        "id": "ppf-normalization-judgment-closure",
+        "digest": sha256_bytes(canonical_json_bytes(members)),
+        "uri": "python:ppf.normalization-judgment-closure",
+    }
+
+
+def _verify_binding_closure(
+    *,
+    documents: dict[str, dict[str, Json]],
+    references: dict[str, dict[str, Json]],
+    invocation_set: dict[str, Json],
+    invocation_set_ref: dict[str, Json],
+) -> None:
+    binding = by_type(documents, "evaluation-input-binding")
+    closure = binding.get("closure")
+    if not isinstance(closure, dict):
+        return
+    manifest = by_type(documents, "evaluation-input-manifest")
+    manifest_ref = references[manifest["manifestId"]]
+    if not content_refs_match(closure.get("inputManifest"), manifest_ref):
+        raise ValueError("binding input manifest differs from supplied manifest")
+    for field in (
+        "profile",
+        "plan",
+        "worktree",
+        "environment",
+        "toolchain",
+        "invocationSet",
+        "sandboxProfile",
+        "adapterSet",
+    ):
+        if not content_refs_match(closure.get(field), manifest.get(field)):
+            raise ValueError(f"binding closure {field!r} differs from input manifest")
+
+    type_fields = {
+        "profile": "generation-policy-profile",
+        "plan": "evaluation-plan",
+        "catalog": "evaluation-evidence-catalog",
+        "stageRegistry": "stage-registry",
+        "environment": "environment-profile",
+        "toolchain": "toolchain-lock",
+        "sandboxProfile": "sandbox-profile",
+        "adapterSet": "assessor-profile",
+    }
+    for field, document_type in type_fields.items():
+        supplied = by_type(documents, document_type)
+        identifier = next(
+            identifier for identifier, document in documents.items() if document is supplied
+        )
+        if not content_refs_match(closure.get(field), references[identifier]):
+            raise ValueError(f"binding closure {field!r} differs from supplied {document_type}")
+    if not content_refs_match(closure.get("invocationSet"), invocation_set_ref):
+        raise ValueError("binding invocation set differs from assessment invocation set")
+    if not content_refs_match(closure.get("worktree"), invocation_set["repositoryRef"]):
+        raise ValueError("binding worktree differs from assessment repository")
+
+
+def _project_operational_attempts(
+    attempts: tuple[dict[str, Json], ...],
+    invocation_set: dict[str, Json],
+    plan: dict[str, Json],
+) -> list[dict[str, Json]]:
+    invocations = {
+        invocation["invocationId"]: invocation for invocation in invocation_set["invocations"]
+    }
+    cases = {case["id"]: case for case in plan["cases"]}
+    projected = []
+    for attempt in attempts:
+        invocation = invocations[attempt["invocationRef"]["id"]]
+        case = cases[invocation["caseRef"]]
+        projected.append(
+            {
+                "caseRef": case["id"],
+                "subjectRef": case["subject"]["id"],
+                "probeRef": case["probe"]["probeRef"],
+                "source": "operational-attempt",
+                "status": attempt["status"],
+                "normalizedCode": f"OPERATIONAL-{attempt['status'].upper()}",
+                "semanticPayload": {
+                    "phase": attempt["phase"],
+                    "diagnosticCodes": sorted(
+                        diagnostic["code"] for diagnostic in attempt["diagnostics"]
+                    ),
+                },
+            }
+        )
+    return projected
 
 
 def _verified_assessment(
@@ -77,13 +180,13 @@ def _verified_assessment(
         verified[reference["id"]] = (entry, raw)
 
     metadata = [
-        strict_json_loads(raw)
+        (entry, strict_json_loads(raw))
         for entry, raw in verified.values()
         if entry["role"] == "execution-metadata"
     ]
-    if len(metadata) != 1 or metadata[0].get("documentType") != "evaluation-invocation-set":
+    if len(metadata) != 1 or metadata[0][1].get("documentType") != "evaluation-invocation-set":
         raise ValueError("assessment manifest requires one invocation-set artifact")
-    invocation_set = metadata[0]
+    invocation_entry, invocation_set = metadata[0]
     if list(catalog.validator("evaluation-invocation-set").iter_errors(invocation_set)):
         raise ValueError("invalid assessment invocation set")
     plan = by_type(documents, "evaluation-plan")
@@ -91,6 +194,18 @@ def _verified_assessment(
     assessors = by_type(documents, "assessor-profile")
     environment = by_type(documents, "environment-profile")
     sandbox = by_type(documents, "sandbox-profile")
+    binding = by_type(documents, "evaluation-input-binding")
+    manifest_input = by_type(documents, "evaluation-input-manifest")
+    invocation_set_ref = {
+        **invocation_entry["contentRef"],
+        "id": invocation_set["invocationSetId"],
+    }
+    _verify_binding_closure(
+        documents=documents,
+        references=references,
+        invocation_set=invocation_set,
+        invocation_set_ref=invocation_set_ref,
+    )
     expected_invocation_set = compile_invocation_set(
         invocation_set_id=invocation_set["invocationSetId"],
         plan=plan,
@@ -99,7 +214,7 @@ def _verified_assessment(
         stage_registry_ref=references[stages["registryId"]],
         assessor_profile=assessors,
         assessor_profile_ref=references[assessors["profileId"]],
-        repository_ref=invocation_set["repositoryRef"],
+        repository_ref=manifest_input.get("worktree", invocation_set["repositoryRef"]),
         environment_ref=environment["environmentId"],
         sandbox_ref=sandbox["sandboxId"],
     )
@@ -109,8 +224,6 @@ def _verified_assessment(
         invocation["invocationId"]: invocation for invocation in invocation_set["invocations"]
     }
 
-    binding = by_type(documents, "evaluation-input-binding")
-    manifest_input = by_type(documents, "evaluation-input-manifest")
     binding_ref = references[binding["bindingId"]]
     manifest_digest = references[manifest_input["manifestId"]]["digest"]
     raw_refs = {
@@ -237,6 +350,23 @@ def _execute(
     run_ref = references.get(run["runId"]) or content_ref(
         run["runId"], run, uri=f"embedded:{run['runId']}"
     )
+    stages = by_type(documents, "stage-registry")
+    assessors = by_type(documents, "assessor-profile")
+    environment = by_type(documents, "environment-profile")
+    sandbox = by_type(documents, "sandbox-profile")
+    input_manifest = by_type(documents, "evaluation-input-manifest")
+    invocation_set = compile_invocation_set(
+        invocation_set_id=input_manifest["invocationSet"]["id"],
+        plan=plan,
+        plan_ref=references[plan["planId"]],
+        stage_registry=stages,
+        stage_registry_ref=references[stages["registryId"]],
+        assessor_profile=assessors,
+        assessor_profile_ref=references[assessors["profileId"]],
+        repository_ref=input_manifest["worktree"],
+        environment_ref=environment["environmentId"],
+        sandbox_ref=sandbox["sandboxId"],
+    )
     result = QualificationService().run(
         QualificationRequest(
             run_ref=run_ref,
@@ -246,23 +376,25 @@ def _execute(
             evidence_catalog=by_type(documents, "evaluation-evidence-catalog"),
             observations=observations,
             attempts=attempts,
+            invocations=tuple(invocation_set["invocations"]),
+            producer_invocation_refs=tuple(
+                execution["invocationRef"]["id"]
+                for envelope in envelopes
+                for execution in envelope["executions"]
+            ),
         )
     )
-    normalizer_source = Path(__file__).with_name("artifacts.py").read_bytes()
     projection = semantic_projection(
         projection_id=f"projection-{run['runId']}",
         input_closure_digest=by_type(documents, "evaluation-input-binding")["closureDigest"],
-        normalizer_ref={
-            "id": "ppf-semantic-normalizer",
-            "digest": "sha256:" + hashlib.sha256(normalizer_source).hexdigest(),
-            "uri": "python:ppf.artifacts.semantic_projection",
-        },
+        normalizer_ref=_normalization_judgment_ref(),
         invocation_refs=[
-            execution["invocationRef"]["id"]
-            for envelope in envelopes
-            for execution in envelope["executions"]
+            invocation["invocationId"] for invocation in invocation_set["invocations"]
         ],
-        observations=list(observations),
+        observations=[
+            *observations,
+            *_project_operational_attempts(attempts, invocation_set, plan),
+        ],
         oracle_results=list(result.oracle_results),
         admissions=result.report["admissions"],
         item_verdicts=result.report["itemVerdicts"],

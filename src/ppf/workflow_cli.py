@@ -131,7 +131,8 @@ def repair(
         "digest": "sha256:" + hashlib.sha256(decision_raw).hexdigest(),
         "uri": f"bundle:{decision.name}",
     }
-    record = RepairService().apply(
+    service = RepairService()
+    prepared = service.prepare(
         repository=repository_root,
         workflow_id=workflow_id,
         decision=decision_document,
@@ -139,7 +140,16 @@ def repair(
         patch=patch.read_bytes(),
         applied_at=applied_at,
     )
-    _write(output, record)
+    previous_output = output.read_bytes() if output.exists() else None
+    _write(output, prepared.record)
+    try:
+        record = service.promote(prepared)
+    except Exception:
+        if previous_output is None:
+            output.unlink(missing_ok=True)
+        else:
+            atomic_write_bytes(output, previous_output)
+        raise
     render_json(
         {
             "repairRecord": str(output),

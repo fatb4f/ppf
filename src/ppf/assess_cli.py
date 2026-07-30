@@ -26,6 +26,7 @@ from .cli_common import (
     load_valid_bundle,
     render_json,
 )
+from .evaluation import content_refs_match
 from .execution import BubblewrapSandbox
 from .invocations import compile_invocation_set
 from .json_input import strict_json_loads
@@ -120,8 +121,37 @@ def run(
         ),
         None,
     ) or _compile(documents, repository_root, references)
+    invocation_set_bytes = next(
+        (
+            raw
+            for _, raw in bundle.raw_documents
+            if (
+                (candidate := strict_json_loads(raw)).get("documentType")
+                == "evaluation-invocation-set"
+                and candidate.get("invocationSetId") == invocation_set["invocationSetId"]
+            )
+        ),
+        canonical_json_bytes(invocation_set),
+    )
     binding = by_type(documents, "evaluation-input-binding")
     manifest = by_type(documents, "evaluation-input-manifest")
+    closure = binding["closure"]
+    invocation_ref = references.get(invocation_set["invocationSetId"]) or content_ref(
+        invocation_set["invocationSetId"],
+        invocation_set,
+    )
+    runtime_refs = {
+        "invocationSet": invocation_ref,
+        "worktree": invocation_set["repositoryRef"],
+        "environment": references[by_type(documents, "environment-profile")["environmentId"]],
+        "sandboxProfile": references[by_type(documents, "sandbox-profile")["sandboxId"]],
+        "adapterSet": references[by_type(documents, "assessor-profile")["profileId"]],
+    }
+    for field, runtime_ref in runtime_refs.items():
+        if not content_refs_match(closure[field], runtime_ref):
+            raise ValueError(f"assessment runtime {field!r} differs from bound closure")
+        if not content_refs_match(manifest[field], runtime_ref):
+            raise ValueError(f"assessment runtime {field!r} differs from input manifest")
     request = AssessmentRequest(
         repository_root=repository_root.resolve(),
         tool_environment_root=tool_environment_root.resolve(),
@@ -178,7 +208,7 @@ def run(
     stored_artifacts.append(
         store.put(
             f"{invocation_set['invocationSetId']}.json",
-            canonical_json_bytes(invocation_set),
+            invocation_set_bytes,
             role="execution-metadata",
             media_type="application/json",
         )

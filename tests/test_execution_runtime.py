@@ -203,6 +203,43 @@ def test_semantic_projection_ignores_run_specific_raw_values() -> None:
     assert first == second
 
 
+def test_semantic_projection_derives_meaningful_official_payload() -> None:
+    common = {
+        "caseRef": "case",
+        "subjectRef": "subject",
+        "probeRef": "probe",
+        "source": "pytest",
+        "status": "failed",
+        "normalizedCode": "PYTEST-EXIT",
+    }
+    projections = [
+        semantic_projection(
+            projection_id="projection",
+            input_closure_digest=DIGEST,
+            normalizer_ref=_ref("normalizer"),
+            invocation_refs=["invoke"],
+            observations=[
+                {
+                    **common,
+                    "payload": {
+                        "exitCode": exit_code,
+                        "stdoutRef": _ref(f"stdout-{exit_code}"),
+                        "stderrRef": _ref(f"stderr-{exit_code}"),
+                    },
+                }
+            ],
+            oracle_results=[],
+            admissions=[],
+            item_verdicts=[],
+            regression_refs=[],
+        )
+        for exit_code in (1, 2)
+    ]
+    assert projections[0]["observations"][0]["payload"] == {"exitCode": 1}
+    assert projections[1]["observations"][0]["payload"] == {"exitCode": 2}
+    assert projections[0]["projectionDigest"] != projections[1]["projectionDigest"]
+
+
 class _Clock:
     def __init__(self) -> None:
         self.tick = 0.0
@@ -369,3 +406,75 @@ def test_repair_promotes_verified_tree_without_mutating_checkout(tmp_path: Path)
             patch=patch,
             applied_at="2026-07-29T12:00:00+00:00",
         )
+
+    invalid_decision = {**decision, "decisionId": "repair-invalid-time"}
+    with pytest.raises(RepairError, match="invalid repair application record"):
+        RepairService().apply(
+            repository=repository,
+            workflow_id="workflow-invalid-time",
+            decision=invalid_decision,
+            decision_ref=_ref("repair-invalid-time"),
+            patch=patch,
+            applied_at="Thu, 07 Apr 2005 22:13:13 +0200",
+        )
+    invalid_ref = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(repository),
+            "show-ref",
+            "--verify",
+            "--quiet",
+            "refs/ppf/repairs/workflow-invalid-time",
+        ],
+        check=False,
+    )
+    assert invalid_ref.returncode != 0
+
+
+def test_repair_uses_sha256_zero_object_id(tmp_path: Path) -> None:
+    repository = tmp_path / "repository-sha256"
+    initialized = subprocess.run(
+        ["git", "init", "-q", "--object-format=sha256", str(repository)],
+        capture_output=True,
+        check=False,
+    )
+    if initialized.returncode:
+        pytest.skip("Git does not support SHA-256 repositories")
+    _run(repository, "config", "user.name", "Test")
+    _run(repository, "config", "user.email", "test@example.invalid")
+    subject = repository / "value.py"
+    subject.write_text("value = 1\n", encoding="utf-8")
+    _run(repository, "add", "value.py")
+    _run(repository, "commit", "-qm", "base")
+    base_commit = _run(repository, "rev-parse", "HEAD").decode().strip()
+    base_tree = _run(repository, "rev-parse", "HEAD^{tree}").decode().strip()
+    subject.write_text("value = 2\n", encoding="utf-8")
+    patch = _run(repository, "diff", "--binary", "--full-index")
+    subject.write_text("value = 1\n", encoding="utf-8")
+    decision = {
+        "decisionId": "repair-sha256",
+        "decision": "repair",
+        "baseCommit": base_commit,
+        "baseTree": base_tree,
+        "patchRef": {
+            "id": "patch",
+            "digest": "sha256:" + hashlib.sha256(patch).hexdigest(),
+            "uri": "artifact:patch",
+        },
+        "failedItems": ["HO-01"],
+        "counterexampleRefs": [],
+        "permittedPaths": ["value.py"],
+        "forbiddenPaths": [],
+        "remainingCycles": 1,
+        "nextSelector": {"items": ["HO-01"], "stages": ["typing"]},
+    }
+    record = RepairService().apply(
+        repository=repository,
+        workflow_id="workflow-sha256",
+        decision=decision,
+        decision_ref=_ref("repair-sha256"),
+        patch=patch,
+        applied_at="2026-07-29T12:00:00+00:00",
+    )
+    assert len(record["resultCommit"]) == 64

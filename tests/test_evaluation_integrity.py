@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 from pathlib import Path
 
-from ppf.evaluation import validate_evaluation_semantics
+from ppf.evaluation import closure_digest, validate_evaluation_semantics
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = ROOT / ".codex" / "skills" / "python-policy-ppf" / "tests" / "fixtures"
@@ -58,3 +59,56 @@ def test_duplicate_declared_integrity_rows_remain_incomplete() -> None:
     errors = _integrity_errors(loaded)
     assert any("duplicate integrity checks" in error.message for error in errors)
     assert any("must be 'incomplete'" in error.message for error in errors)
+
+
+def test_binding_closure_must_equal_referenced_input_manifest() -> None:
+    digest = "sha256:" + ("1" * 64)
+    fields = {
+        name: {"id": name.lower(), "digest": digest}
+        for name in (
+            "profile",
+            "plan",
+            "worktree",
+            "environment",
+            "toolchain",
+            "invocationSet",
+            "sandboxProfile",
+            "adapterSet",
+        )
+    }
+    manifest = {
+        "documentType": "evaluation-input-manifest",
+        "schemaVersion": "0.2.0",
+        "manifestId": "manifest",
+        **fields,
+    }
+    manifest_raw = json.dumps(manifest, sort_keys=True).encode()
+    closure = {
+        **fields,
+        "catalog": {"id": "catalog", "digest": digest},
+        "stageRegistry": {"id": "stages", "digest": digest},
+        "inputManifest": {
+            "id": "manifest",
+            "digest": "sha256:" + hashlib.sha256(manifest_raw).hexdigest(),
+        },
+    }
+    binding = {
+        "documentType": "evaluation-input-binding",
+        "schemaVersion": "0.2.0",
+        "bindingId": "binding",
+        "closure": closure,
+        "closureDigest": closure_digest(closure),
+        "createdAt": "2026-07-29T12:00:00Z",
+    }
+    binding_path = Path("binding.json")
+    manifest_path = Path("manifest.json")
+    loaded = [
+        (binding_path, json.dumps(binding).encode(), binding),
+        (manifest_path, manifest_raw, manifest),
+    ]
+    assert not validate_evaluation_semantics(loaded)[binding_path]
+
+    binding["closure"]["worktree"] = {"id": "other-worktree", "digest": digest}
+    binding["closureDigest"] = closure_digest(binding["closure"])
+    errors = validate_evaluation_semantics(loaded)[binding_path]
+    assert any("input manifest field 'worktree'" in error.message for error in errors)

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from ppf.catalog import SchemaCatalog
 from ppf.core import validate_semantics
 from ppf.qualification import QualificationRequest, QualificationService
@@ -123,3 +125,78 @@ def test_rejected_required_case_prevents_pass() -> None:
     assert result.verdict == "inconclusive"
     assert verdict["rejectedEvidenceRefs"]
     assert verdict["missingEvidence"]
+
+
+def test_operational_failure_forces_insufficient_evidence() -> None:
+    request = _request(status="passed", exit_code=0)
+    result = QualificationService().run(
+        QualificationRequest(
+            **{
+                **request.__dict__,
+                "attempts": (
+                    {
+                        "invocationRef": _ref("invocation-failed"),
+                        "status": "preparation-failed",
+                    },
+                ),
+            }
+        )
+    )
+    assert result.verdict == "inconclusive"
+    assert result.oracle_results[0]["result"] == "insufficient-evidence"
+    assert result.oracle_results[0]["rationaleCode"] == (
+        "required-invocation-outcome-missing-or-failed"
+    )
+
+
+def test_compiled_invocations_require_exactly_one_producer_outcome() -> None:
+    request = _request(status="passed", exit_code=0)
+    invocation = {"invocationId": "invoke-case", "caseRef": "case-ho-01"}
+    for producer_refs in ((), ("invoke-case", "invoke-case")):
+        result = QualificationService().run(
+            QualificationRequest(
+                **{
+                    **request.__dict__,
+                    "invocations": (invocation,),
+                    "producer_invocation_refs": producer_refs,
+                }
+            )
+        )
+        assert result.verdict == "inconclusive"
+
+
+def test_waiver_expiring_at_report_time_is_inactive() -> None:
+    waiver = {
+        "id": "waiver-ho-01",
+        "owner": "policy-owner",
+        "rationale": "Boundary check.",
+        "expiresAt": "2026-07-29T12:00:00Z",
+        "scope": ["HO-01"],
+        "authorizationRef": {
+            "id": "authorization",
+            "digest": DIGEST,
+            "uri": "https://example.invalid/authorization",
+        },
+    }
+    result = QualificationService().run(_request(status="failed", exit_code=1, waivers=(waiver,)))
+    assert result.verdict == "fail"
+    assert result.report["itemVerdicts"][0]["verdict"] == "fail"
+    assert not validate_semantics(result.report)
+
+
+def test_duplicate_and_ambiguous_selectors_are_rejected() -> None:
+    duplicate = _request(status="passed", exit_code=0)
+    duplicate.plan["cases"][0]["oracleRefs"].append("exit-oracle")
+    with pytest.raises(ValueError, match="duplicate oracle"):
+        QualificationService().run(duplicate)
+
+    ambiguous = _request(status="passed", exit_code=0)
+    ambiguous.evidence_catalog["rules"].append(
+        {
+            **ambiguous.evidence_catalog["rules"][0],
+            "id": "runtime-wildcard",
+            "oracleRef": None,
+        }
+    )
+    with pytest.raises(ValueError, match="ambiguous wildcard"):
+        QualificationService().run(ambiguous)

@@ -12,8 +12,10 @@ from typing import Any
 
 import rfc8785
 
+from .catalog import SchemaCatalog
+from .core import validate_semantics
+
 Json = Any
-_ZERO_OID = "0" * 40
 _FORBIDDEN_MODES = {"120000", "160000"}
 _REGULAR_MODES = {"100644", "100755"}
 
@@ -28,6 +30,18 @@ class _DiffEntry:
     new_mode: str
     status: str
     path: str
+
+
+@dataclass(frozen=True)
+class PreparedRepair:
+    """A validated repair record and its pending CAS promotion."""
+
+    record: dict[str, Json]
+    repository: Path
+    repair_ref: str
+    result_commit: str
+    expected_ref: str
+    decision_id: str
 
 
 def _git(
@@ -137,7 +151,7 @@ def _verify_diff(
 class RepairService:
     """Apply, inspect, record, and atomically promote one bounded patch."""
 
-    def apply(
+    def prepare(
         self,
         *,
         repository: Path,
@@ -146,34 +160,37 @@ class RepairService:
         decision_ref: dict[str, Json],
         patch: bytes,
         applied_at: str,
-    ) -> dict[str, Json]:
+    ) -> PreparedRepair:
         if decision["decision"] != "repair" or decision["remainingCycles"] < 1:
             raise RepairError("repair is not authorized or its budget is exhausted")
         patch_digest = "sha256:" + hashlib.sha256(patch).hexdigest()
         if patch_digest != decision["patchRef"]["digest"]:
             raise RepairError("requested patch digest differs from the repair decision")
         repository = repository.resolve(strict=True)
-        base_commit = _git(
-            repository, ["rev-parse", "--verify", f"{decision['baseCommit']}^{{commit}}"]
-        ).decode().strip()
+        base_commit = (
+            _git(repository, ["rev-parse", "--verify", f"{decision['baseCommit']}^{{commit}}"])
+            .decode()
+            .strip()
+        )
         if base_commit != decision["baseCommit"]:
             raise RepairError("base commit identity mismatch")
-        base_tree = _git(
-            repository, ["rev-parse", f"{base_commit}^{{tree}}"]
-        ).decode().strip()
+        base_tree = _git(repository, ["rev-parse", f"{base_commit}^{{tree}}"]).decode().strip()
         if base_tree != decision["baseTree"]:
             raise RepairError("base tree identity mismatch")
 
+        object_format = _git(repository, ["rev-parse", "--show-object-format"]).decode().strip()
+        object_lengths = {"sha1": 40, "sha256": 64}
+        if object_format not in object_lengths:
+            raise RepairError(f"unsupported Git object format {object_format!r}")
+        zero_oid = "0" * object_lengths[object_format]
         repair_ref = f"refs/ppf/repairs/{workflow_id}"
         existing = subprocess.run(
             ["git", "-C", str(repository), "rev-parse", "--verify", repair_ref],
             capture_output=True,
             check=False,
         )
-        expected_ref = (
-            existing.stdout.decode().strip() if existing.returncode == 0 else _ZERO_OID
-        )
-        if expected_ref != _ZERO_OID and expected_ref != base_commit:
+        expected_ref = existing.stdout.decode().strip() if existing.returncode == 0 else zero_oid
+        if expected_ref != zero_oid and expected_ref != base_commit:
             raise RepairError("repair ref does not match the decision base commit")
 
         with tempfile.TemporaryDirectory(prefix="ppf-repair-") as temporary:
@@ -214,9 +231,7 @@ class RepairService:
                         "HEAD",
                     ],
                 )
-                canonical_diff_digest = (
-                    "sha256:" + hashlib.sha256(canonical_diff).hexdigest()
-                )
+                canonical_diff_digest = "sha256:" + hashlib.sha256(canonical_diff).hexdigest()
                 result_tree = _git(worktree, ["write-tree"]).decode().strip()
                 environment = {
                     **os.environ,
@@ -227,12 +242,16 @@ class RepairService:
                     "GIT_AUTHOR_DATE": applied_at,
                     "GIT_COMMITTER_DATE": applied_at,
                 }
-                result_commit = _git(
-                    worktree,
-                    ["commit-tree", result_tree, "-p", base_commit],
-                    input_bytes=f"PPF repair {decision['decisionId']}\n".encode(),
-                    environment=environment,
-                ).decode().strip()
+                result_commit = (
+                    _git(
+                        worktree,
+                        ["commit-tree", result_tree, "-p", base_commit],
+                        input_bytes=f"PPF repair {decision['decisionId']}\n".encode(),
+                        environment=environment,
+                    )
+                    .decode()
+                    .strip()
+                )
                 record = {
                     "documentType": "repair-application-record",
                     "schemaVersion": "0.1.0",
@@ -257,21 +276,63 @@ class RepairService:
                 ):
                     raise RepairError("canonical repair diff changed during verification")
                 rfc8785.dumps(record)
-                _git(
-                    repository,
-                    [
-                        "update-ref",
-                        "-m",
-                        f"PPF repair {decision['decisionId']}",
-                        repair_ref,
-                        result_commit,
-                        expected_ref,
-                    ],
+                structural_errors = list(
+                    SchemaCatalog.load().validator("repair-application-record").iter_errors(record)
                 )
-                return record
+                semantic_errors = validate_semantics(record)
+                if structural_errors or semantic_errors:
+                    details = [
+                        *(error.message for error in structural_errors),
+                        *(error.message for error in semantic_errors),
+                    ]
+                    raise RepairError("invalid repair application record: " + "; ".join(details))
+                return PreparedRepair(
+                    record=record,
+                    repository=repository,
+                    repair_ref=repair_ref,
+                    result_commit=result_commit,
+                    expected_ref=expected_ref,
+                    decision_id=decision["decisionId"],
+                )
             finally:
                 subprocess.run(
                     ["git", "-C", str(repository), "worktree", "remove", "--force", str(worktree)],
                     capture_output=True,
                     check=False,
                 )
+
+    def promote(self, prepared: PreparedRepair) -> dict[str, Json]:
+        """CAS-promote a repair whose complete record is already valid."""
+        _git(
+            prepared.repository,
+            [
+                "update-ref",
+                "-m",
+                f"PPF repair {prepared.decision_id}",
+                prepared.repair_ref,
+                prepared.result_commit,
+                prepared.expected_ref,
+            ],
+        )
+        return prepared.record
+
+    def apply(
+        self,
+        *,
+        repository: Path,
+        workflow_id: str,
+        decision: dict[str, Json],
+        decision_ref: dict[str, Json],
+        patch: bytes,
+        applied_at: str,
+    ) -> dict[str, Json]:
+        """Compatibility API for callers without an external record store."""
+        prepared = self.prepare(
+            repository=repository,
+            workflow_id=workflow_id,
+            decision=decision,
+            decision_ref=decision_ref,
+            patch=patch,
+            applied_at=applied_at,
+        )
+        return self.promote(prepared)

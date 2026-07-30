@@ -147,8 +147,40 @@ def semantic_projection(
     regression_refs: list[dict[str, Json]],
 ) -> dict[str, Json]:
     """Remove run-specific fields and create a canonically ordered projection."""
+
+    def stable_payload(value: Json) -> Json:
+        if isinstance(value, dict):
+            volatile = {
+                "artifactRef",
+                "completedAt",
+                "created",
+                "createdAt",
+                "durationMs",
+                "end",
+                "location",
+                "rawArtifactRefs",
+                "startedAt",
+                "start",
+                "stderrRef",
+                "stdoutRef",
+                "timestamp",
+                "uri",
+                "uuid",
+            }
+            return {
+                key: stable_payload(item)
+                for key, item in sorted(value.items())
+                if key not in volatile
+            }
+        if isinstance(value, list):
+            return [stable_payload(item) for item in value]
+        return value
+
     stable_observations = []
     for observation in observations:
+        payload = observation.get("semanticPayload")
+        if payload is None:
+            payload = observation.get("payload")
         stable_observations.append(
             {
                 "caseRef": observation["caseRef"],
@@ -157,7 +189,7 @@ def semantic_projection(
                 "source": observation["source"],
                 "status": observation["status"],
                 "normalizedCode": observation["normalizedCode"],
-                "payload": observation.get("semanticPayload"),
+                "payload": stable_payload(payload),
             }
         )
     stable_observations.sort(

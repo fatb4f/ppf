@@ -73,7 +73,7 @@
       },
       "inputSchemaRef": {
         "id": "python-policy-ppf-schema",
-        "digest": "sha256:06055b436bb224a4fc76eef96821d7e467eeb1c047b78807945c22e06d7d4eaf",
+        "digest": "sha256:4874cb937054219e6e5ec51d8a856ebeff968dc75deaf4083b76148e607661aa",
         "uri": "src/ppf/schemas/references/python-policy-ppf.schema.json",
         "mediaType": "application/schema+json"
       },

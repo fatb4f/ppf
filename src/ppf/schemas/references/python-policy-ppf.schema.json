@@ -318,7 +318,8 @@
             "type": "string"
           },
           "title": "Oraclerefs",
-          "type": "array"
+          "type": "array",
+          "uniqueItems": true
         },
         "probe": {
           "$ref": "#/$defs/ProbeInvocation"
