@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import tempfile
 from dataclasses import replace
 from pathlib import Path
@@ -29,6 +28,7 @@ from .cli_common import (
 )
 from .execution import BubblewrapSandbox
 from .invocations import compile_invocation_set
+from .json_input import strict_json_loads
 from .tool_environment import ToolEnvironmentError, ToolEnvironmentVerifier
 
 Json = Any
@@ -71,8 +71,14 @@ def plan(
     repository_root: Path,
 ) -> int:
     """Compile and print the deterministic invocation set."""
-    documents = load_valid_bundle(document, repository_root=repository_root)
-    render_json(_compile(documents, repository_root, exact_bundle_refs(document)))
+    bundle = load_valid_bundle(document, repository_root=repository_root)
+    render_json(
+        _compile(
+            bundle.documents,
+            repository_root,
+            exact_bundle_refs(bundle),
+        )
+    )
     return 0
 
 
@@ -84,7 +90,7 @@ def check(
     tool_environment_root: Path,
 ) -> int:
     """Verify the locked tool environment and sandbox capabilities."""
-    documents = load_valid_bundle(document, repository_root=repository_root)
+    documents = load_valid_bundle(document, repository_root=repository_root).documents
     manifest = by_type(documents, "tool-environment-manifest")
     ToolEnvironmentVerifier().verify(manifest, tool_environment_root)
     sandbox = by_type(documents, "sandbox-profile")
@@ -102,8 +108,9 @@ def run(
     tool_environment_root: Path,
 ) -> int:
     """Execute eligible invocations and write evidence artifacts."""
-    documents = load_valid_bundle(document, repository_root=repository_root)
-    references = exact_bundle_refs(document)
+    bundle = load_valid_bundle(document, repository_root=repository_root)
+    documents = bundle.documents
+    references = exact_bundle_refs(bundle)
     plan_document = by_type(documents, "evaluation-plan")
     invocation_set = next(
         (
@@ -228,7 +235,7 @@ def run(
 @app.command
 def replay(counterexample: Path) -> int:
     """Print the digest-bound replay invocation from a counterexample."""
-    payload = json.loads(counterexample.read_bytes())
+    payload = strict_json_loads(counterexample.read_bytes())
     render_json({"replayInvocation": payload["replayInvocation"]})
     return 0
 
@@ -236,7 +243,7 @@ def replay(counterexample: Path) -> int:
 @app.command
 def inspect(output_dir: Path) -> int:
     """Summarize a prior assessment output directory."""
-    payload = json.loads((output_dir / "assessment-index.json").read_bytes())
+    payload = strict_json_loads((output_dir / "assessment-index.json").read_bytes())
     render_json(
         {
             "operationalSuccess": payload["operationalSuccess"],

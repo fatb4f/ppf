@@ -1,36 +1,57 @@
-"""Regenerate strict Pydantic boundary models from the execution sidecar."""
+"""Regenerate strict Pydantic boundary models from the composed contract."""
 
 from __future__ import annotations
 
+import json
 import subprocess
 import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMAS = ROOT / "src" / "ppf" / "schemas"
-SOURCE = SCHEMAS / "extensions" / "python-policy-ppf.execution-repair-extension.schema.json"
-OFFICIAL = SCHEMAS / "references" / "python-policy-ppf.schema.json"
+REGISTRY = SCHEMAS / "schema-registry.json"
 OUTPUT = ROOT / "src" / "ppf" / "generated" / "models.py"
-OFFICIAL_URI = "urn:python-policy-ppf:generation-policy:0.2.0"
+
+
+def _localize_references(value: object, local_names: dict[str, str]) -> object:
+    if isinstance(value, dict):
+        return {
+            name: (
+                next(
+                    (
+                        item.replace(uri, local_name, 1)
+                        for uri, local_name in local_names.items()
+                        if item.startswith(uri)
+                    ),
+                    item,
+                )
+                if name == "$ref" and isinstance(item, str)
+                else _localize_references(item, local_names)
+            )
+            for name, item in value.items()
+        }
+    if isinstance(value, list):
+        return [_localize_references(item, local_names) for item in value]
+    return value
 
 
 def main() -> int:
-    """Bundle the trusted external reference and invoke the pinned generator."""
+    """Bundle registered schemas with local references and invoke the pinned generator."""
     with tempfile.TemporaryDirectory(prefix="ppf-models-") as directory:
         temporary = Path(directory)
-        extensions = temporary / "extensions"
-        references = temporary / "references"
-        extensions.mkdir()
-        references.mkdir()
-        bundled = extensions / "execution.schema.json"
-        bundled.write_text(
-            SOURCE.read_text(encoding="utf-8").replace(
-                OFFICIAL_URI,
-                "../references/python-policy-ppf.schema.json",
-            ),
-            encoding="utf-8",
-        )
-        (references / OFFICIAL.name).write_bytes(OFFICIAL.read_bytes())
+        registry = json.loads(REGISTRY.read_bytes())
+        resources = {
+            resource["uri"]: SCHEMAS / resource["path"] for resource in registry["resources"]
+        }
+        local_names = {uri: f"schema-{index}.json" for index, uri in enumerate(sorted(resources))}
+        for uri, source in resources.items():
+            schema = json.loads(source.read_bytes())
+            localized = _localize_references(schema, local_names)
+            (temporary / local_names[uri]).write_text(
+                json.dumps(localized),
+                encoding="utf-8",
+            )
+        bundled = temporary / local_names[registry["composedSchema"]]
         OUTPUT.parent.mkdir(parents=True, exist_ok=True)
         subprocess.run(
             [

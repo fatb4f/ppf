@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import hashlib
-import json
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -27,6 +26,7 @@ from .cli_common import (
 )
 from .core import validate_semantics
 from .invocations import compile_invocation_set
+from .json_input import strict_json_loads
 from .qualification import QualificationRequest, QualificationService
 
 Json = Any
@@ -56,7 +56,7 @@ def _verified_assessment(
 ]:
     """Load only manifest-addressed, digest-verified assessment artifacts."""
     manifest_path = assessment_index.parent / "manifest-assessment-run.json"
-    manifest = json.loads(manifest_path.read_bytes())
+    manifest = strict_json_loads(manifest_path.read_bytes())
     catalog = SchemaCatalog.load()
     errors = list(catalog.validator("artifact-manifest").iter_errors(manifest))
     if errors or validate_semantics(manifest):
@@ -77,7 +77,9 @@ def _verified_assessment(
         verified[reference["id"]] = (entry, raw)
 
     metadata = [
-        json.loads(raw) for entry, raw in verified.values() if entry["role"] == "execution-metadata"
+        strict_json_loads(raw)
+        for entry, raw in verified.values()
+        if entry["role"] == "execution-metadata"
     ]
     if len(metadata) != 1 or metadata[0].get("documentType") != "evaluation-invocation-set":
         raise ValueError("assessment manifest requires one invocation-set artifact")
@@ -120,7 +122,7 @@ def _verified_assessment(
     for entry, raw in verified.values():
         if entry["role"] != "producer-envelope":
             continue
-        envelope = json.loads(raw)
+        envelope = strict_json_loads(raw)
         envelope_errors = list(
             catalog.validator("evaluation-producer-envelope").iter_errors(envelope)
         )
@@ -187,7 +189,7 @@ def _verified_assessment(
     for entry, raw in verified.values():
         if entry["role"] != "operational-attempt":
             continue
-        attempt = json.loads(raw)
+        attempt = strict_json_loads(raw)
         if list(catalog.validator("operational-attempt").iter_errors(attempt)):
             raise ValueError(f"invalid operational attempt {attempt.get('attemptId')!r}")
         invocation = invocations.get(attempt["invocationRef"]["id"])
@@ -278,11 +280,12 @@ def run(
     output_dir: Path,
 ) -> int:
     """Qualify a complete assessment result."""
-    documents = load_valid_bundle(document, repository_root=repository_root)
+    bundle = load_valid_bundle(document, repository_root=repository_root)
+    documents = bundle.documents
     report, verdict, projection = _execute(
         documents,
         assessment_index,
-        exact_bundle_refs(document),
+        exact_bundle_refs(bundle),
     )
     output_dir.mkdir(parents=True, exist_ok=True)
     store = ContentAddressedArtifactStore(output_dir)
@@ -328,7 +331,7 @@ def run(
 @app.command
 def item(report: Path, item_ref: str) -> int:
     """Print one item verdict from a qualification report."""
-    document = json.loads(report.read_bytes())
+    document = strict_json_loads(report.read_bytes())
     matches = [verdict for verdict in document["itemVerdicts"] if verdict["itemRef"] == item_ref]
     if not matches:
         render_json({"valid": False, "error": f"unknown item {item_ref!r}"})
@@ -340,7 +343,7 @@ def item(report: Path, item_ref: str) -> int:
 @app.command
 def report(path: Path) -> int:
     """Print a stable qualification-report summary."""
-    document = json.loads(path.read_bytes())
+    document = strict_json_loads(path.read_bytes())
     render_json({"reportId": document["reportId"], "summary": document["summary"]})
     return 0
 
@@ -348,7 +351,7 @@ def report(path: Path) -> int:
 @app.command
 def explain(path: Path, item_ref: str) -> int:
     """Explain admissions and missing evidence for an item."""
-    document = json.loads(path.read_bytes())
+    document = strict_json_loads(path.read_bytes())
     verdicts = [item for item in document["itemVerdicts"] if item["itemRef"] == item_ref]
     admission_ids = {
         reference

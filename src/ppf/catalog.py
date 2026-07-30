@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass
 from importlib.resources import files
 from pathlib import PurePosixPath
@@ -10,6 +9,8 @@ from typing import Any
 
 from jsonschema import Draft202012Validator, FormatChecker
 from referencing import Registry, Resource
+
+from .json_input import strict_json_loads
 
 Json = Any
 
@@ -148,7 +149,7 @@ class SchemaCatalog:
     def load(cls) -> SchemaCatalog:
         root = files("ppf.schemas")
         registry_resource = root.joinpath("schema-registry.json")
-        registry_document = json.loads(registry_resource.read_text(encoding="utf-8"))
+        registry_document = strict_json_loads(registry_resource.read_text(encoding="utf-8"))
         composed_uri = registry_document.get("composedSchema")
         resources = registry_document.get("resources")
         if not isinstance(composed_uri, str) or not isinstance(resources, list):
@@ -171,7 +172,7 @@ class SchemaCatalog:
                 resource = resource.joinpath(part)
             if not resource.is_file():
                 raise ValueError(f"registered schema path is missing: {path!r}")
-            schema = json.loads(resource.read_text(encoding="utf-8"))
+            schema = strict_json_loads(resource.read_text(encoding="utf-8"))
             if not isinstance(schema, dict):
                 raise ValueError(f"registered schema is not an object: {path!r}")
             if schema.get("$id") != uri:

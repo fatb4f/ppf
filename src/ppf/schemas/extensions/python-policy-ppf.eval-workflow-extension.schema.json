@@ -35,17 +35,6 @@
       "additionalProperties": false,
       "allOf": [
         {
-          "properties": {
-            "iteration": {
-              "properties": {
-                "kind": {
-                  "const": "baseline"
-                }
-              }
-            }
-          }
-        },
-        {
           "else": {
             "properties": {
               "decision": {
@@ -65,11 +54,16 @@
                       "verdict": {
                         "const": "pass"
                       }
-                    }
+                    },
+                    "required": ["verdict"],
+                    "type": "object"
                   }
-                }
+                },
+                "required": ["judgment"],
+                "type": "object"
               }
-            }
+            },
+            "required": ["iteration"]
           },
           "then": {
             "properties": {
@@ -88,7 +82,19 @@
           "$ref": "#/$defs/BaselineDecision"
         },
         "iteration": {
-          "$ref": "#/$defs/EvaluationIteration"
+          "allOf": [
+            {
+              "$ref": "#/$defs/EvaluationIteration"
+            },
+            {
+              "properties": {
+                "kind": {
+                  "const": "baseline"
+                }
+              },
+              "required": ["kind"]
+            }
+          ]
         }
       },
       "required": [
@@ -483,19 +489,13 @@
       "additionalProperties": false,
       "allOf": [
         {
-          "else": {
-            "properties": {
-              "baseline": {
-                "$ref": "#/$defs/BaselineResult"
-              }
-            }
-          },
           "if": {
             "properties": {
               "mode": {
                 "const": "qualification-only"
               }
-            }
+            },
+            "required": ["mode"]
           },
           "then": {
             "properties": {
@@ -506,16 +506,24 @@
                 "maxItems": 0
               },
               "qualificationIteration": {
-                "allOf": [
+                "anyOf": [
                   {
-                    "$ref": "#/$defs/EvaluationIteration"
+                    "type": "null"
                   },
                   {
-                    "properties": {
-                      "kind": {
-                        "const": "qualification"
+                    "allOf": [
+                      {
+                        "$ref": "#/$defs/EvaluationIteration"
+                      },
+                      {
+                        "properties": {
+                          "kind": {
+                            "const": "qualification"
+                          }
+                        },
+                        "required": ["kind"]
                       }
-                    }
+                    ]
                   }
                 ]
               }
@@ -526,16 +534,19 @@
           "if": {
             "properties": {
               "baseline": {
+                "required": ["decision"],
                 "properties": {
                   "decision": {
                     "const": "proceed-to-implementation"
                   }
-                }
+                },
+                "type": "object"
               },
               "mode": {
                 "const": "implement-and-qualify"
               }
-            }
+            },
+            "required": ["baseline", "mode"]
           },
           "then": {
             "properties": {
@@ -554,19 +565,27 @@
                     }
                   ]
                 },
-                "minItems": 1
+                "type": "array"
               },
               "qualificationIteration": {
-                "allOf": [
+                "anyOf": [
                   {
-                    "$ref": "#/$defs/EvaluationIteration"
+                    "type": "null"
                   },
                   {
-                    "properties": {
-                      "kind": {
-                        "const": "qualification"
+                    "allOf": [
+                      {
+                        "$ref": "#/$defs/EvaluationIteration"
+                      },
+                      {
+                        "properties": {
+                          "kind": {
+                            "const": "qualification"
+                          }
+                        },
+                        "required": ["kind"]
                       }
-                    }
+                    ]
                   }
                 ]
               }
@@ -577,6 +596,7 @@
           "if": {
             "properties": {
               "baseline": {
+                "required": ["decision"],
                 "properties": {
                   "decision": {
                     "enum": [
@@ -584,17 +604,39 @@
                       "stop"
                     ]
                   }
-                }
+                },
+                "type": "object"
               },
               "mode": {
                 "const": "implement-and-qualify"
               }
-            }
+            },
+            "required": ["baseline", "mode"]
           },
           "then": {
             "properties": {
               "implementationIterations": {
                 "maxItems": 0
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "mode": {
+                "const": "implement-and-qualify"
+              },
+              "qualificationIteration": {
+                "type": "object"
+              }
+            },
+            "required": ["mode", "qualificationIteration"]
+          },
+          "then": {
+            "properties": {
+              "baseline": {
+                "$ref": "#/$defs/BaselineResult"
               }
             }
           }

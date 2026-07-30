@@ -5,65 +5,80 @@ from __future__ import annotations
 import hashlib
 import json
 from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import rfc8785
+from pydantic import BaseModel
 
-from .core import _document_id
-from .validation import ValidationContext, validate_paths
+from .contracts import load_contract_bytes
+from .core import _document_id, _expand_inputs
+from .validation import ValidationContext, validate_documents
 
 Json = Any
+
+
+@dataclass(frozen=True)
+class ValidatedBundle:
+    """One immutable in-memory snapshot of validated contract input bytes."""
+
+    documents: dict[str, dict[str, Json]]
+    references: dict[str, dict[str, Json]]
+    transports: dict[str, BaseModel]
+    raw_documents: tuple[tuple[Path, bytes], ...]
 
 
 def load_valid_bundle(
     paths: list[Path],
     *,
     repository_root: Path,
-) -> dict[str, dict[str, Json]]:
+) -> ValidatedBundle:
     """Validate a complete bundle before indexing any document."""
-    result = validate_paths(
-        paths,
+    loaded: list[tuple[Path, bytes]] = []
+    for path in _expand_inputs(paths):
+        try:
+            loaded.append((path, path.read_bytes()))
+        except OSError as error:
+            raise ValueError(f"cannot read contract {path}: {error}") from error
+    result = validate_documents(
+        loaded,
         context=ValidationContext(repository_root),
     )
     if not result.valid:
         raise ValueError(json.dumps(result.as_dict(), sort_keys=True))
     documents: dict[str, dict[str, Json]] = {}
-    expanded: list[Path] = []
-    for path in paths:
-        if path.is_dir():
-            expanded.extend(sorted(path.rglob("*.json")))
-        else:
-            expanded.append(path)
-    for path in expanded:
-        document = json.loads(path.read_bytes())
+    references: dict[str, dict[str, Json]] = {}
+    transports: dict[str, BaseModel] = {}
+    for path, raw in loaded:
+        loaded_contract = load_contract_bytes(
+            path,
+            raw,
+            repository_root=repository_root,
+            require_bundle=False,
+        )
+        document = loaded_contract.document
         identifier = _document_id(document)
         if identifier is not None:
             documents[identifier] = document
-    return documents
-
-
-def exact_bundle_refs(paths: list[Path]) -> dict[str, dict[str, Json]]:
-    """Index exact supplied document bytes as content references."""
-    references: dict[str, dict[str, Json]] = {}
-    expanded: list[Path] = []
-    for path in paths:
-        if path.is_dir():
-            expanded.extend(sorted(path.rglob("*.json")))
-        else:
-            expanded.append(path)
-    for path in expanded:
-        raw = path.read_bytes()
-        document = json.loads(raw)
-        identifier = _document_id(document)
-        if identifier is not None:
+            transports[identifier] = loaded_contract.transport
             references[identifier] = {
                 "id": identifier,
                 "digest": "sha256:" + hashlib.sha256(raw).hexdigest(),
                 "uri": f"bundle:{path.name}",
                 "mediaType": "application/json",
             }
-    return references
+    return ValidatedBundle(
+        documents=documents,
+        references=references,
+        transports=transports,
+        raw_documents=tuple(loaded),
+    )
+
+
+def exact_bundle_refs(bundle: ValidatedBundle) -> dict[str, dict[str, Json]]:
+    """Index exact supplied document bytes as content references."""
+    return {identifier: dict(reference) for identifier, reference in bundle.references.items()}
 
 
 def by_type(

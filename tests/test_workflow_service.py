@@ -8,10 +8,19 @@ from pathlib import Path
 import pytest
 
 from ppf.catalog import SchemaCatalog
+from ppf.contracts import ContractValidationError
 from ppf.workflow import WorkflowError, WorkflowService
 from ppf.workflow_cli import app
 
 DIGEST = "sha256:" + ("1" * 64)
+FIXTURES = (
+    Path(__file__).resolve().parents[1]
+    / ".codex"
+    / "skills"
+    / "python-policy-ppf"
+    / "tests"
+    / "fixtures"
+)
 
 
 def _ref(identifier: str) -> dict[str, str]:
@@ -96,14 +105,122 @@ def test_implementation_cannot_complete_without_recorded_iteration() -> None:
         )
 
 
+def _write_binding(path: Path) -> None:
+    binding = json.loads((FIXTURES / "valid-input-binding.json").read_bytes())
+    binding["bindingId"] = "binding-ho-01"
+    path.write_text(json.dumps(binding), encoding="utf-8")
+
+
+def _plan_public_workflow(tmp_path: Path) -> Path:
+    binding = tmp_path / "binding.json"
+    _write_binding(binding)
+    workflow = tmp_path / "workflow.json"
+    assert (
+        app(
+            [
+                "workflow",
+                "plan",
+                str(binding),
+                "--workflow-id",
+                "workflow-ho-01",
+                "--mode",
+                "implement-and-qualify",
+                "--at",
+                "2026-07-29T11:59:00Z",
+                "--output",
+                str(workflow),
+            ]
+        )
+        == 0
+    )
+    return workflow
+
+
+def test_public_coordinator_rejects_passing_baseline_stop(tmp_path: Path) -> None:
+    workflow = _plan_public_workflow(tmp_path)
+    original = workflow.read_bytes()
+    baseline = tmp_path / "baseline.json"
+    baseline.write_text(
+        json.dumps(_iteration("baseline", "pass", "baseline")),
+        encoding="utf-8",
+    )
+    with pytest.raises(ContractValidationError):
+        app(
+            [
+                "implement",
+                "baseline",
+                str(workflow),
+                str(baseline),
+                "--decision",
+                "stop",
+                "--output",
+                str(workflow),
+            ]
+        )
+    assert workflow.read_bytes() == original
+
+
+def test_public_coordinator_rejects_qualification_without_baseline(
+    tmp_path: Path,
+) -> None:
+    workflow = _plan_public_workflow(tmp_path)
+    original = workflow.read_bytes()
+    qualification = tmp_path / "qualification.json"
+    qualification.write_text(
+        json.dumps(_iteration("qualification", "pass", "qualification")),
+        encoding="utf-8",
+    )
+    with pytest.raises(ContractValidationError):
+        app(
+            [
+                "implement",
+                "complete",
+                str(workflow),
+                str(qualification),
+                "--output",
+                str(workflow),
+            ]
+        )
+    assert workflow.read_bytes() == original
+
+
+def test_workflow_same_path_publication_does_not_use_path_write_bytes(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    workflow = _plan_public_workflow(tmp_path)
+    baseline = tmp_path / "baseline.json"
+    baseline.write_text(
+        json.dumps(_iteration("baseline", "pass", "baseline")),
+        encoding="utf-8",
+    )
+
+    def forbidden_write_bytes(_path: Path, _content: bytes) -> int:
+        raise AssertionError("workflow publication must use atomic replacement")
+
+    monkeypatch.setattr(Path, "write_bytes", forbidden_write_bytes)
+    assert (
+        app(
+            [
+                "implement",
+                "baseline",
+                str(workflow),
+                str(baseline),
+                "--decision",
+                "proceed-to-implementation",
+                "--output",
+                str(workflow),
+            ]
+        )
+        == 0
+    )
+
+
 def test_public_coordinator_runs_complete_ho_01_repair_loop(
     tmp_path: Path,
 ) -> None:
     binding = tmp_path / "binding.json"
-    binding.write_text(
-        json.dumps({"bindingId": "binding-ho-01"}),
-        encoding="utf-8",
-    )
+    _write_binding(binding)
     workflow = tmp_path / "workflow.json"
     assert (
         app(
@@ -194,6 +311,8 @@ def test_public_coordinator_runs_complete_ho_01_repair_loop(
     decision.write_text(
         json.dumps(
             {
+                "documentType": "repair-decision",
+                "schemaVersion": "0.1.0",
                 "decisionId": "repair-ho-01",
                 "decision": "repair",
                 "baseCommit": base_commit,

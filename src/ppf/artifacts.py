@@ -19,6 +19,24 @@ from .execution_contracts import semantic_projection_digest
 Json = Any
 
 
+def atomic_write_bytes(path: Path, content: bytes) -> None:
+    """Atomically replace one file with complete bytes from the same directory."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=f".{path.name}.",
+        dir=path.parent,
+    )
+    try:
+        with os.fdopen(descriptor, "wb") as stream:
+            stream.write(content)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary_name, path)
+    finally:
+        if os.path.exists(temporary_name):
+            os.unlink(temporary_name)
+
+
 def sha256_bytes(content: bytes) -> str:
     """Return the authoritative raw-byte artifact identity."""
     return "sha256:" + hashlib.sha256(content).hexdigest()

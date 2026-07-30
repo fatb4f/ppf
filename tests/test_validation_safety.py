@@ -41,6 +41,34 @@ def test_unknown_document_type_is_explicitly_rejected() -> None:
     assert "unsupported documentType" in _messages(result)[0]
 
 
+def test_duplicate_json_object_keys_are_rejected() -> None:
+    result = validate_documents(
+        [
+            (
+                Path("duplicate.json"),
+                b'{"documentType":"generation-policy-profile",'
+                b'"documentType":"evaluation-workflow"}',
+            )
+        ]
+    )
+    assert not result.valid
+    assert _messages(result) == ["duplicate JSON object key 'documentType'"]
+
+
+def test_file_uri_is_subject_to_repository_and_digest_enforcement(tmp_path: Path) -> None:
+    result = validate_documents(
+        [
+            (
+                Path("profile.json"),
+                _profile_with_uri("file:///etc/passwd", "sha256:" + ("1" * 64)),
+            )
+        ],
+        context=ValidationContext(tmp_path),
+    )
+    assert not result.valid
+    assert any("repository-root-relative" in message for message in _messages(result))
+
+
 def test_percent_encoded_traversal_is_rejected(tmp_path: Path) -> None:
     raw = _profile_with_uri("%2e%2e/file", "sha256:" + ("1" * 64))
     result = validate_documents(

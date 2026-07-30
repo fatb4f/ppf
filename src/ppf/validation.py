@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import hashlib
-import json
 import re
 import tomllib
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
+from json import JSONDecodeError
 from pathlib import Path, PurePosixPath
 from typing import Any
 from urllib.parse import unquote_to_bytes, urlsplit
@@ -22,6 +22,7 @@ from .core import (
 )
 from .evaluation import validate_evaluation_semantics
 from .execution_contracts import validate_execution_semantics
+from .json_input import strict_json_loads
 
 Json = Any
 LoadedDocument = tuple[Path, bytes, dict[str, Json]]
@@ -158,7 +159,16 @@ def _local_ref_errors(
                 )
             )
             continue
-        if parsed.scheme:
+        if parsed.scheme and parsed.scheme != "file":
+            continue
+        if parsed.netloc:
+            errors.append(
+                ValidationError(
+                    (*ref_path, "uri"),
+                    f"local URI must not contain an authority: {uri!r}",
+                    "semantic",
+                )
+            )
             continue
         if parsed.query:
             errors.append(
@@ -375,6 +385,7 @@ def validate_documents(
     *,
     context: ValidationContext | None = None,
     catalog: SchemaCatalog | None = None,
+    require_bundle: bool = True,
 ) -> ValidationResult:
     """Validate exact document bytes through the authoritative orchestration path."""
     catalog = catalog or SchemaCatalog.load()
@@ -384,15 +395,10 @@ def validate_documents(
     for path, raw in sorted(documents, key=lambda item: str(item[0])):
         path_errors = errors.setdefault(path, [])
         try:
-            document = json.loads(
-                raw,
-                parse_constant=lambda value: (_ for _ in ()).throw(
-                    ValueError(f"invalid JSON constant {value}")
-                ),
-            )
+            document = strict_json_loads(raw)
             if not isinstance(document, dict):
                 raise TypeError("top-level document must be an object")
-        except (json.JSONDecodeError, TypeError, UnicodeError, ValueError) as error:
+        except (JSONDecodeError, TypeError, UnicodeError, ValueError) as error:
             path_errors.append(ValidationError((), str(error), "input"))
             continue
 
@@ -420,12 +426,13 @@ def validate_documents(
         path_errors.extend(_local_ref_errors(document, context))
         path_errors.extend(_implementation_lock_errors(document, context))
 
-    for path, bundle_errors in validate_bundle(structurally_valid).items():
-        errors[path].extend(bundle_errors)
-    for path, semantic_errors in validate_evaluation_semantics(structurally_valid).items():
-        errors[path].extend(semantic_errors)
-    for path, semantic_errors in validate_execution_semantics(structurally_valid).items():
-        errors[path].extend(semantic_errors)
+    if require_bundle:
+        for path, bundle_errors in validate_bundle(structurally_valid).items():
+            errors[path].extend(bundle_errors)
+        for path, semantic_errors in validate_evaluation_semantics(structurally_valid).items():
+            errors[path].extend(semantic_errors)
+        for path, semantic_errors in validate_execution_semantics(structurally_valid).items():
+            errors[path].extend(semantic_errors)
     return _result(errors)
 
 

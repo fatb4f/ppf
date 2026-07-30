@@ -3,14 +3,15 @@
 from __future__ import annotations
 
 import hashlib
-import json
 from pathlib import Path
 from typing import Any
 
 from cyclopts import App
 
-from .artifacts import pretty_json_bytes
+from .artifacts import atomic_write_bytes, pretty_json_bytes
 from .cli_common import content_ref, render_json
+from .contracts import load_contract_bytes
+from .json_input import strict_json_loads
 from .repair import RepairService
 from .workflow import WorkflowService
 
@@ -27,13 +28,22 @@ app.command(workflow_app, name="workflow")
 app.command(implement_app, name="implement")
 
 
-def _read(path: Path) -> dict[str, Json]:
-    return json.loads(path.read_bytes())
+def _read_json(path: Path) -> dict[str, Json]:
+    document = strict_json_loads(path.read_bytes())
+    if not isinstance(document, dict):
+        raise ValueError(f"expected a JSON object in {path}")
+    return document
+
+
+def _read_contract(path: Path) -> dict[str, Json]:
+    raw = path.read_bytes()
+    return load_contract_bytes(path, raw, require_bundle=False).document
 
 
 def _write(path: Path, document: dict[str, Json]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_bytes(pretty_json_bytes(document))
+    raw = pretty_json_bytes(document)
+    load_contract_bytes(path, raw, require_bundle=False)
+    atomic_write_bytes(path, raw)
 
 
 @workflow_app.command(name="plan")
@@ -46,7 +56,7 @@ def plan_workflow(
     output: Path,
 ) -> int:
     """Bind inputs and create the first declared workflow transition."""
-    binding = _read(input_binding)
+    binding = _read_contract(input_binding)
     result = WorkflowService().plan(
         workflow_id=workflow_id,
         mode=mode,
@@ -61,7 +71,7 @@ def plan_workflow(
 @workflow_app.command(name="next")
 def next_workflow(workflow: Path) -> int:
     """Return the next operation without assigning workflow state."""
-    document = _read(workflow)
+    document = _read_contract(workflow)
     render_json({"next": WorkflowService().next_action(document)})
     return 0
 
@@ -69,7 +79,7 @@ def next_workflow(workflow: Path) -> int:
 @workflow_app.command
 def resume(workflow: Path) -> int:
     """Return resumable workflow state and its next operation."""
-    document = _read(workflow)
+    document = _read_contract(workflow)
     render_json(
         {
             "workflowId": document["workflowId"],
@@ -90,8 +100,8 @@ def baseline(
 ) -> int:
     """Record a judged baseline and its declared routing decision."""
     result = WorkflowService().record_baseline(
-        _read(workflow),
-        iteration=_read(iteration),
+        _read_contract(workflow),
+        iteration=_read_json(iteration),
         decision=decision,
     )
     _write(output, result)
@@ -111,11 +121,15 @@ def repair(
 ) -> int:
     """Apply and atomically promote one post-verified repair tree."""
     decision_raw = decision.read_bytes()
-    decision_document = json.loads(decision_raw)
+    decision_document = load_contract_bytes(
+        decision,
+        decision_raw,
+        require_bundle=False,
+    ).document
     decision_ref = {
         "id": decision_document["decisionId"],
         "digest": "sha256:" + hashlib.sha256(decision_raw).hexdigest(),
-        "uri": decision.as_uri(),
+        "uri": f"bundle:{decision.name}",
     }
     record = RepairService().apply(
         repository=repository_root,
@@ -145,8 +159,8 @@ def record_iteration(
 ) -> int:
     """Record a targeted replay judgment as an implementation iteration."""
     result = WorkflowService().record_implementation(
-        _read(workflow),
-        iteration=_read(implementation_iteration),
+        _read_contract(workflow),
+        iteration=_read_json(implementation_iteration),
     )
     _write(output, result)
     render_json(
@@ -168,8 +182,8 @@ def complete(
 ) -> int:
     """Record full qualification and enter the authoritative terminal state."""
     result = WorkflowService().complete(
-        _read(workflow),
-        iteration=_read(qualification_iteration),
+        _read_contract(workflow),
+        iteration=_read_json(qualification_iteration),
     )
     _write(output, result)
     render_json({"workflow": str(output), "currentState": result["currentState"]})

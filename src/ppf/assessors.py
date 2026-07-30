@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing import Any, Protocol
 
 from .execution import RawExecutionResult
+from .json_input import strict_json_loads
 
 Json = Any
 
@@ -111,8 +112,8 @@ class AnsibleAssessor(ProcessAssessor):
         malformed = False
         for line in result.stdout.splitlines():
             try:
-                event = json.loads(line)
-            except (UnicodeError, json.JSONDecodeError):
+                event = strict_json_loads(line)
+            except (UnicodeError, ValueError):
                 malformed = True
                 continue
             if isinstance(event, dict):
